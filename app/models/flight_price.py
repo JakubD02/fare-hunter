@@ -1,5 +1,12 @@
-
-from sqlalchemy import BigInteger, Column, Date, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+)
 
 from app.enums.currency import Currency
 from app.models.base import Base

@@ -1,7 +1,13 @@
 
-from decimal import Decimal
-
-from sqlalchemy import BigInteger, Boolean, Column, Date, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+)
 
 from app.enums.currency import Currency
 from app.models.base import Base

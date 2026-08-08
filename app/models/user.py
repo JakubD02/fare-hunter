@@ -1,5 +1,3 @@
-
-
 import uuid
 
 from sqlalchemy import UUID, Boolean, Column, DateTime, String, func
