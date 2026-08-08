@@ -7,10 +7,11 @@ from sqlalchemy import (
     Integer,
     Numeric,
 )
+from sqlalchemy import Enum as SqlEnum
 
 from app.enums.currency import Currency
 from app.models.base import Base
-from sqlalchemy import Enum as SqlEnum
+
 
 class FlightPrice(Base):
     __tablename__ = "flight_prices"

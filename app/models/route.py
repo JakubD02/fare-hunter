@@ -1,5 +1,4 @@
 from sqlalchemy import (
-    UUID,
     Boolean,
     Column,
     Date,

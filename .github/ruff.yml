@@ -1,0 +1,24 @@
+name: Ruff Linter
+
+on:
+  push:
+    branches: [ "main", "master" ]
+
+jobs:
+  lint:
+    name: Check code with Ruff
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Ruff Linter
+        uses: astral-sh/ruff-action@v1
+        with:
+            args: "check ."
+
+      - name: Run Ruff Formatter
+        uses: astral-sh/ruff-action@v1
+        with:
+            args: "format --check ."
