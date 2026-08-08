@@ -1,0 +1,21 @@
+services:
+  app:
+    build: .
+    ports: ["8000:8000"]
+    volumes: [".:/app"]
+    env_file: [.env]
+    depends_on: [db, redis]
+    command: uvicorn app.main:app --host 0.0.0.0 --reload
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: fare_hunter
+    volumes: [postgres_data:/var/lib/postgresql/data]
+
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  postgres_data:
