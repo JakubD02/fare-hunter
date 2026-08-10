@@ -10,3 +10,8 @@ app = FastAPI(
 @app.get("/", tags=["default"])
 def root():
     return {"service": "flight-tracker", "status": "ok"}
+
+
+@app.get("/health")
+def health():
+    return {"status", "healthy"}
