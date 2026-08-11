@@ -2,18 +2,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str
-    redis_url: str = "redis://redis:6379/0"
-    jwt_secret_key: str
+    DATABASE_URL: str
+    REDIS_URL: str = "redis://redis:6379/0"
+    JWT_SECRET_KEY: str
 
-    jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 15
-    refresh_token_expire_days: int = 7
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    app_env: str = "development"
-    log_level: str = "DEBUG"
+    APP_ENV: str = "development"
+    LOG_LEVEL: str = "DEBUG"
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 settings = Settings()

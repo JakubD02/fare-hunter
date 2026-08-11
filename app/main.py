@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from app.routers import auth
 
 app = FastAPI(
     title="Fare hunter - flight tracker API",
@@ -6,6 +7,8 @@ app = FastAPI(
     version="0.1.0",
 )
 
+
+app.include_router(auth.router)
 
 @app.get("/", tags=["default"])
 def root():
