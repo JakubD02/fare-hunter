@@ -5,7 +5,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from starlette import status
 
-from app.core.security import create_access_token, create_refresh_token
+from app.core.security import (
+    CurrentUser,
+    create_access_token,
+    create_refresh_token,
+)
 from app.database import get_db
 from app.schemas.token import TokenPair
 from app.schemas.user import UserCreate, UserRead
@@ -42,3 +46,8 @@ async def register(user_in: UserCreate, db: db_dependency):
             detail="Email already registered",
         )
     return user
+
+
+@router.get("/me", response_model=UserRead)
+async def get_current_user_info(current_user: CurrentUser):
+    return current_user

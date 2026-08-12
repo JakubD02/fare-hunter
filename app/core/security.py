@@ -79,7 +79,9 @@ def create_refresh_token(email: str, user_id: UUID) -> str:
 
 
 def decode_refresh_token(token: str) -> dict:
-    payload = jwt.decode(token, settings.JWT_SECRET_KEY, settings.JWT_ALGORITHM)
+    payload = jwt.decode(
+        token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+    )
     if payload.get("type") != "refresh":
         raise JWTError("Not a refresh token")
     return payload
