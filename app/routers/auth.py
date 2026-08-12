@@ -34,7 +34,7 @@ async def login_for_access_token(db: db_dependency, form_data: form_data_depende
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserRead)
-async def regster(user_in: UserCreate, db: db_dependency):
+async def register(user_in: UserCreate, db: db_dependency):
     user = create_user(db=db, user_in=user_in)
     if not user:
         raise HTTPException(
