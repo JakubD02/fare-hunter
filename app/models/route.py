@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
 
 
-class RouteBase(Base):
+class Route(Base):
     __tablename__ = "routes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
