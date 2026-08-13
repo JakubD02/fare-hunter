@@ -22,7 +22,7 @@ form_data_dependency = Annotated[OAuth2PasswordRequestForm, Depends()]
 
 
 @router.post("/token", response_model=TokenPair)
-async def login_for_access_token(db: db_dependency, form_data: form_data_dependency):
+async def login(db: db_dependency, form_data: form_data_dependency):
     user = authenticate_user(
         db=db, username=form_data.username, password=form_data.password
     )
@@ -49,5 +49,5 @@ async def register(user_in: UserCreate, db: db_dependency):
 
 
 @router.get("/me", response_model=UserRead)
-async def get_current_user_info(current_user: CurrentUser):
+async def read_me(current_user: CurrentUser):
     return current_user

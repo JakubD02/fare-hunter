@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.services.reference_service import get_all_airports
+from app.services import reference_service
 
 router = APIRouter(tags=["reference"])
 
@@ -12,10 +12,10 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 
 @router.get("/airports")
-async def get_airports(db: db_dependency):
-    return get_all_airports(db)
+async def list_airports(db: db_dependency):
+    return reference_service.list_airports(db)
 
 
 @router.get("/airlines")
-async def get_airlines(db: db_dependency):
-    return get_airlines(db)
+async def list_airlines(db: db_dependency):
+    return reference_service.list_airlines(db)
