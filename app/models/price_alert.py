@@ -9,8 +9,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.constants.price import (
-    MONEY_DECIMAL_PLACES,
-    MONEY_MAX_DIGITS,
+    PRICE_DECIMAL_PLACES,
+    PRICE_MAX_DIGITS,
 )
 from app.enums.currency import Currency
 from app.models.base import Base
@@ -24,7 +24,7 @@ class PriceAlert(Base):
         ForeignKey("routes.id"), unique=True, nullable=False
     )
     threshold_price: Mapped[Decimal] = mapped_column(
-        Numeric(MONEY_MAX_DIGITS, MONEY_DECIMAL_PLACES), nullable=False
+        Numeric(PRICE_MAX_DIGITS, PRICE_DECIMAL_PLACES), nullable=False
     )
     currency: Mapped[Currency] = mapped_column(
         SqlEnum(Currency), default=Currency.PLN, nullable=False
