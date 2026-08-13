@@ -1,6 +1,8 @@
-import uuid
+from datetime import datetime
+from uuid import UUID as UUIDType
+from uuid import uuid4
 
-from sqlalchemy import UUID, DateTime, String, func
+from sqlalchemy import String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.constants.user import (
@@ -14,7 +16,7 @@ from app.models.base import Base
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    id: Mapped[UUIDType] = mapped_column(primary_key=True, default=uuid4)
     first_name: Mapped[str] = mapped_column(
         String(FIRST_NAME_MAX_LENGTH), nullable=False
     )
@@ -23,6 +25,6 @@ class User(Base):
     )
     password_hash: Mapped[str] = mapped_column(String(PASSWORD_HASH_MAX_LENGTH))
     is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         nullable=False, server_default=func.now()
     )
