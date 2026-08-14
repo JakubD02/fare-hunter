@@ -7,7 +7,7 @@ from app.constants.price import PRICE_DECIMAL_PLACES, PRICE_MAX_DIGITS, PRICE_MI
 from app.enums.currency import Currency
 
 
-class FlightPrice(BaseModel):
+class FlightPriceBase(BaseModel):
     price: Decimal = Field(
         ge=PRICE_MIN_VALUE,
         max_digits=PRICE_MAX_DIGITS,
@@ -18,10 +18,19 @@ class FlightPrice(BaseModel):
     return_date: date | None = None
 
 
-class FlightPriceRead(FlightPrice):
+class FlightStats(BaseModel):
+    route_id: int
+    period_days: int
+    sample_count: int
+    min_price: Decimal | None
+    max_price: Decimal | None
+    avg_price: Decimal | None
+
+
+class FlightPriceRead(FlightPriceBase):
     id: int
     route_id: int
-    air_line_id: int
-    fetched_at: datetime | None
+    airline_id: int
+    fetched_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
