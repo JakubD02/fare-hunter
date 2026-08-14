@@ -50,7 +50,7 @@ def create_user(db: Session, user_in: UserCreate) -> User | None:
     user = User(
         first_name=user_in.first_name,
         email=user_in.email,
-        password=get_password_hash(user_in.password),
+        password_hash=get_password_hash(user_in.password),
     )
 
     db.add(user)

@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.database import get_db
 from app.main import app
 from app.models import Base
 
@@ -16,16 +17,9 @@ engine = create_engine(
 )
 TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-
-@pytest.fixture
-def client():
-    """FastAPI test client."""
-    return TestClient(app)
-
-
 @pytest.fixture
 def db():
-    """Test database session."""
+    """Test database session"""
     Base.metadata.create_all(engine)
     session = TestSessionLocal()
     try:
@@ -33,3 +27,14 @@ def db():
     finally:
         session.close()
         Base.metadata.drop_all(engine)
+
+@pytest.fixture
+def client(db):
+    """FastAPI test client"""
+    def override_get_db():
+        yield db
+    
+    app.dependency_overrides[get_db] = override_get_db
+    yield TestClient(app)
+    app.dependency_overrides.clear()
+    # return TestClient(app)
