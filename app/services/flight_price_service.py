@@ -4,7 +4,6 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.flight_price import FlightPrice
-from app.models.route import Route
 from app.models.user import User
 from app.services import routes_service
 
