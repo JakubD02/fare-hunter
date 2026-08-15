@@ -17,6 +17,7 @@ engine = create_engine(
 )
 TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 @pytest.fixture
 def db():
     """Test database session"""
@@ -28,13 +29,31 @@ def db():
         session.close()
         Base.metadata.drop_all(engine)
 
+
 @pytest.fixture
 def client(db):
     """FastAPI test client"""
+
     def override_get_db():
         yield db
-    
+
     app.dependency_overrides[get_db] = override_get_db
     yield TestClient(app)
     app.dependency_overrides.clear()
-    # return TestClient(app)
+
+
+@pytest.fixture
+def user_data():
+    return {
+        "first_name": "test",
+        "email": "test@gmail.com",
+        "password": "test1234",
+    }
+
+
+@pytest.fixture
+def registered_user(client, user_data):
+    """register user in DB and return login data"""
+    response = client.post("/auth/register", json=user_data)
+    assert response.status_code == 201
+    return user_data
