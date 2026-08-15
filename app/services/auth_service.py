@@ -65,8 +65,13 @@ def refresh_access_token(db: Session, refresh_token: str) -> str | None:
     except JWTError:
         return None
 
-    user_id = decoded_token.get("user_id")
-    if not user_id:
+    user_id_str = decoded_token.get("user_id")
+    if not user_id_str:
+        return None
+
+    try:
+        user_id = UUID(user_id_str)
+    except ValueError:
         return None
 
     user = get_user_by_id(db, user_id)
