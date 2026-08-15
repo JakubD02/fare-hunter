@@ -1,5 +1,3 @@
-
-
 def test_register_creates_user(client, user_data):
     """Successful registration and user data without password"""
     response = client.post("/auth/register", json=user_data)
@@ -76,4 +74,4 @@ def test_register_with_additional_field(client):
         },
     )
 
-    assert response.status_code == 201 # 422
+    assert response.status_code == 201  # 422
