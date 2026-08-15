@@ -29,6 +29,7 @@ packaging==26.3
 passlib==1.7.4
 pluggy==1.6.0
 prompt_toolkit==3.0.53
+psycopg2-binary==2.9.12
 pyasn1==0.6.4
 pycparser==3.0
 pydantic==2.13.4
@@ -39,7 +40,8 @@ pytest==9.1.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
 python-jose==3.5.0
-redis==8.1.0
+python-multipart==0.0.32
+redis==6.4.0
 rsa==4.9.1
 ruff==0.16.1
 six==1.17.0
@@ -52,5 +54,3 @@ tzlocal==5.4.4
 uvicorn==0.52.1
 vine==5.1.0
 wcwidth==0.8.2
-psycopg2-binary==2.9.12
-python-multipart==0.0.20

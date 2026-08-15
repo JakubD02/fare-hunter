@@ -4,9 +4,30 @@ services:
     ports: ["8000:8000"]
     volumes: [".:/app"]
     env_file: [.env]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/fare_hunter
     depends_on: [db, redis]
     command: uvicorn app.main:app --host 0.0.0.0 --reload
 
+  worker:
+    build: .
+    volumes: [".:/app"]
+    env_file: [.env]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/fare_hunter
+    depends_on: [db, redis]
+    command: celery -A app.celery_app worker --loglevel=INFO
+  beat:
+    build: .
+    volumes: [".:/app"]
+    env_file: [.env]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/fare_hunter
+    depends_on: [db, redis]
+    command: celery -A app.celery_app worker --loglevel=INFO
   db:
     image: postgres:16-alpine
     environment:
@@ -16,6 +37,9 @@ services:
 
   redis:
     image: redis:7-alpine
+    ports: ["6379:6379"]
+    volumes: [redis_data:/data]
 
 volumes:
   postgres_data:
+  redis_data:
