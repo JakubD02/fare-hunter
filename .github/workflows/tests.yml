@@ -24,4 +24,10 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run pytest
+        env:
+            DATABASE_URL: ${{ secrets.DATABASE_URL }}
+            REDIS_URL: ${{ secrets.REDIS_URL }}
+            JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+            SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+            FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
         run: pytest
