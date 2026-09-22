@@ -1,8 +1,7 @@
 from typing import ClassVar
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
 from celery.schedules import crontab
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -20,6 +19,7 @@ class Settings(BaseSettings):
 
     # serpapi
     SERPAPI_KEY: str
+    SERPAPI_URL: str = "https://serpapi.com/api"
 
     # sendgrid
     SENDGRID_API_KEY: str
@@ -32,9 +32,9 @@ class Settings(BaseSettings):
 
     # celery beat schedule
     CELERY_BEAT_SCHEDULE: ClassVar[dict] = {
-    "fetch-prices-every-8h": {
-        "task": "app.tasks.price_tasks.fetch_all_prices_periodic",
-        "schedule": crontab(minute=0, hour="*/8"),
+        "fetch-prices-every-8h": {
+            "task": "app.tasks.price_tasks.fetch_all_prices_periodic",
+            "schedule": crontab(minute=0, hour="*/8"),
         }
     }
 

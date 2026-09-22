@@ -3,7 +3,7 @@ import logging
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Content, Mail, To
 
-from app.config import settings
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

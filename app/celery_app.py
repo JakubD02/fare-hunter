@@ -9,6 +9,8 @@ celery_app = Celery(
     include=["app.tasks.price_tasks"],
 )
 
+celery_app.conf.beat_schedule = settings.CELERY_BEAT_SCHEDULE
+
 celery_app.conf.update(
     task_serializer="json",
     accept_content=["json"],
