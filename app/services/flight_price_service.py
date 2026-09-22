@@ -3,9 +3,15 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.flight_price import FlightPrice
 from app.models.user import User
 from app.services import routes_service
+
+
+class FlightPriceService:
+    def __init__(self):
+        self.api_key = settings.SERPAPI_KEY
 
 
 def get_history(db: Session, user: User, route_id: int) -> list[FlightPrice] | None:
@@ -51,3 +57,6 @@ def get_stats(
         "max_price": result.max_price,
         "avg_price": result.avg_price,
     }
+
+
+flight_price_service = FlightPriceService()
