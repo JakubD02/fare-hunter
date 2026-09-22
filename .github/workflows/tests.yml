@@ -25,9 +25,12 @@ jobs:
 
       - name: Run pytest
         env:
-            DATABASE_URL: ${{ secrets.DATABASE_URL }}
-            REDIS_URL: ${{ secrets.REDIS_URL }}
-            JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-            SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
-            FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
+          DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/fare_hunter
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET_KEY: test-secret-key
+          SENDGRID_API_KEY: test-key
+          FROM_EMAIL: test@farehunter.app
+          SERPAPI_KEY: test-key
+          APP_URL: http://localhost:8000
+
         run: pytest

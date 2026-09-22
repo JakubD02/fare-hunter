@@ -1,4 +1,8 @@
+from typing import ClassVar
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from celery.schedules import crontab
 
 
 class Settings(BaseSettings):
@@ -22,8 +26,17 @@ class Settings(BaseSettings):
     FROM_EMAIL: str = "noreply@fareh\u200bunter.app"
     APP_URL: str = "http://localhost:8000"
 
+    # app
     APP_ENV: str = "development"
     LOG_LEVEL: str = "DEBUG"
+
+    # celery beat schedule
+    CELERY_BEAT_SCHEDULE: ClassVar[dict] = {
+    "fetch-prices-every-8h": {
+        "task": "app.tasks.price_tasks.fetch_all_prices_periodic",
+        "schedule": crontab(minute=0, hour="*/8"),
+        }
+    }
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

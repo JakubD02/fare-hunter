@@ -1,11 +1,17 @@
 from celery import shared_task
 from sqlalchemy import select
 
+from app import celery_app
 from app.database import SessionLocal
 from app.models.airline import Airline
 from app.models.flight_price import FlightPrice
 from app.models.route import Route
 from app.services.serpapi_mock import fetch_prices
+
+
+@celery_app.task(bind=True)
+def fetch_prices_for_route(self, route_id: int) -> int:
+    pass
 
 
 @shared_task
