@@ -8,6 +8,7 @@ from app.core.security import CurrentUser
 from app.database import get_db
 from app.schemas.price_alert import PriceAlertCreate, PriceAlertRead
 from app.services import alert_service
+from app.tasks.email_tasks import send_alert_confirmation_email_task
 
 router = APIRouter(tags=["alerts"])
 
@@ -41,6 +42,11 @@ async def upsert_alert(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found."
         )
+
+    send_alert_confirmation_email_task.delay(
+        user_id=str(current_user.id),
+        alert_id=alert.id,
+    )
 
     return alert
 

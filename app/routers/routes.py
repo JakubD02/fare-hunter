@@ -8,6 +8,7 @@ from app.core.security import CurrentUser
 from app.database import get_db
 from app.schemas.route import RouteCreate, RouteRead, RouteUpdate
 from app.services import routes_service as rs
+from app.tasks.price_tasks import fetch_prices_for_route
 
 router = APIRouter(prefix="/routes", tags=["routes"])
 
@@ -24,6 +25,8 @@ async def create_route(
     db: db_dependency, current_user: CurrentUser, route_in: RouteCreate
 ):
     route = rs.create_route(db=db, user=current_user, route_in=route_in)
+
+    fetch_prices_for_route.delay(route_id=route.id)
 
     return route
 

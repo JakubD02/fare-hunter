@@ -23,7 +23,9 @@ class User(Base):
     email: Mapped[str] = mapped_column(
         String(EMAIL_MAX_LENGTH), nullable=False, index=True, unique=True
     )
-    password_hash: Mapped[str] = mapped_column(String(PASSWORD_HASH_MAX_LENGTH))
+    password_hash: Mapped[str] = mapped_column(
+        String(PASSWORD_HASH_MAX_LENGTH), nullable=False
+    )
     is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         nullable=False, server_default=func.now()
