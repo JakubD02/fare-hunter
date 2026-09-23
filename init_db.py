@@ -1,13 +1,9 @@
 from sqlalchemy.orm import Session
 
 from app.database import engine
-from app.models.base import Base
-from app.models.user import User
-from app.models.route import Route
-from app.models.flight_price import FlightPrice
-from app.models.price_alert import PriceAlert
-from app.models.airport import Airport
 from app.models.airline import Airline
+from app.models.airport import Airport
+from app.models.base import Base
 
 
 def init_db():
@@ -110,7 +106,6 @@ def seed_data():
         session.add_all(airports)
         session.add_all(airlines)
         session.commit()
-
 
 
 if __name__ == "__main__":
