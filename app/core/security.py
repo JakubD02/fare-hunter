@@ -67,7 +67,7 @@ def create_access_token(email: str, user_id: UUID) -> str:
 
 def create_refresh_token(email: str, user_id: UUID) -> str:
     expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.REFRESH_TOKEN_EXPIRE_DAYS
+        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
     )
     payload = {
         "sub": email,
