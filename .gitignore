@@ -21,7 +21,6 @@ Thumbs.db
 # Env
 .env
 .env.local
-.env.example
 
 # Database
 *.db

@@ -120,10 +120,13 @@ cd fare-hunter
 # Create .env from template
 cp .env.example .env
 
-# Edit .env with your keys:
+# Edit .env with your required keys:
+# - DATABASE_URL (postgresql+psycopg2://postgres:postgres@db:5432/fare_hunter)
+# - REDIS_URL (redis://redis:6379/0)
+# - JWT_SECRET_KEY (generate: python -c "import secrets; print(secrets.token_urlsafe(32))")
 # - SERPAPI_KEY (from https://serpapi.com)
 # - SENDGRID_API_KEY (from https://sendgrid.com)
-# - JWT_SECRET_KEY (generate: python -c "import secrets; print(secrets.token_urlsafe(32))")
+# - APP_URL (http://localhost:8000 for local)
 ```
 
 ### 2. Start Docker Containers
@@ -283,7 +286,7 @@ REFRESH_TOKEN_EXPIRE_DAYS=7
 
 # Email (SendGrid)
 SENDGRID_API_KEY=SG.xxxxxxxx
-FROM_EMAIL=noreply@farehunter.app
+FROM_EMAIL=norply@farehunter.app
 
 # Flight Data (SerpAPI)
 SERPAPI_KEY=your-serpapi-key
