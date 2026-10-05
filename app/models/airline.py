@@ -8,8 +8,6 @@ from app.models.base import Base
 class Airline(Base):
     __tablename__ = "airlines"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    iata_code: Mapped[str] = mapped_column(
-        String(IATA_CODE_LENGTH), unique=True, nullable=False, index=True
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    iata_code: Mapped[str] = mapped_column(String(IATA_CODE_LENGTH), unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(NAME_MAX_LENGTH), nullable=False)

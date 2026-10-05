@@ -48,9 +48,7 @@ def upgrade() -> None:
         sa.Column("email", sa.String(length=255), nullable=False),
         sa.Column("password_hash", sa.String(length=255), nullable=False),
         sa.Column("is_active", sa.Boolean(), nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
-        ),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_users_email"), "users", ["email"], unique=True)
@@ -63,9 +61,7 @@ def upgrade() -> None:
         sa.Column("departure_date", sa.Date(), nullable=True),
         sa.Column("return_date", sa.Date(), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
-        ),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.ForeignKeyConstraint(
             ["destination_id"],
             ["airports.id"],
@@ -77,9 +73,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_routes_destination_id"), "routes", ["destination_id"], unique=False
-    )
+    op.create_index(op.f("ix_routes_destination_id"), "routes", ["destination_id"], unique=False)
     op.create_index(op.f("ix_routes_origin_id"), "routes", ["origin_id"], unique=False)
     op.create_index(op.f("ix_routes_user_id"), "routes", ["user_id"], unique=False)
     op.create_table(
@@ -119,9 +113,7 @@ def upgrade() -> None:
         unique=False,
     )
     op.create_index(op.f("ix_flight_prices_id"), "flight_prices", ["id"], unique=False)
-    op.create_index(
-        op.f("ix_flight_prices_route_id"), "flight_prices", ["route_id"], unique=False
-    )
+    op.create_index(op.f("ix_flight_prices_route_id"), "flight_prices", ["route_id"], unique=False)
     op.create_table(
         "price_alerts",
         sa.Column("id", sa.BigInteger(), nullable=False),
@@ -141,9 +133,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_price_alerts_id"), "price_alerts", ["id"], unique=False)
-    op.create_index(
-        op.f("ix_price_alerts_route_id"), "price_alerts", ["route_id"], unique=False
-    )
+    op.create_index(op.f("ix_price_alerts_route_id"), "price_alerts", ["route_id"], unique=False)
     # ### end Alembic commands ###
 
 

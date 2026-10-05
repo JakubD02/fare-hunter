@@ -5,6 +5,7 @@ from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import (
     ForeignKey,
     Numeric,
+    String,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -19,15 +20,9 @@ from app.models.base import Base
 class PriceAlert(Base):
     __tablename__ = "price_alerts"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    route_id: Mapped[int] = mapped_column(
-        ForeignKey("routes.id"), unique=True, nullable=False
-    )
-    threshold_price: Mapped[Decimal] = mapped_column(
-        Numeric(PRICE_MAX_DIGITS, PRICE_DECIMAL_PLACES), nullable=False
-    )
-    currency: Mapped[Currency] = mapped_column(
-        SqlEnum(Currency), default=Currency.PLN, nullable=False
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    route_id: Mapped[int] = mapped_column(ForeignKey("routes.id"), unique=True, nullable=False)
+    threshold_price: Mapped[Decimal] = mapped_column(Numeric(PRICE_MAX_DIGITS, PRICE_DECIMAL_PLACES), nullable=False)
+    currency: Mapped[Currency] = mapped_column(SqlEnum(Currency), default=Currency.PLN, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     last_notified_at: Mapped[datetime | None] = mapped_column()
