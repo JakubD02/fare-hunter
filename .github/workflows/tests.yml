@@ -1,14 +1,14 @@
+---
 name: Tests
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: ["main", "master"]
 
 jobs:
   test:
     name: Run tests
     runs-on: ubuntu-latest
-    
     services:
       postgres:
         image: postgres:15
@@ -51,7 +51,8 @@ jobs:
 
       - name: Run pytest
         env:
-          DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/fare_hunter
+          DATABASE_URL: >-
+            postgresql+psycopg2://postgres:postgres@localhost:5432/fare_hunter
           REDIS_URL: redis://localhost:6379/0
           JWT_SECRET_KEY: test-secret-key
           SENDGRID_API_KEY: test-key
