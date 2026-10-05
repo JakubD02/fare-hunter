@@ -13,22 +13,16 @@ from app.constants.user import (
 
 
 class UserBase(BaseModel):
-    first_name: str = Field(
-        min_length=FIRST_NAME_MIN_LENGTH, max_length=FIRST_NAME_MAX_LENGTH
-    )
+    first_name: str = Field(min_length=FIRST_NAME_MIN_LENGTH, max_length=FIRST_NAME_MAX_LENGTH)
     email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
 
 
 class UserCreate(UserBase):
-    password: str = Field(
-        min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH
-    )
+    password: str = Field(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
 
 
 class UserUpdate(UserBase):
-    first_name: str | None = Field(
-        default=None, min_length=FIRST_NAME_MIN_LENGTH, max_length=FIRST_NAME_MAX_LENGTH
-    )
+    first_name: str | None = Field(default=None, min_length=FIRST_NAME_MIN_LENGTH, max_length=FIRST_NAME_MAX_LENGTH)
     email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
 
 

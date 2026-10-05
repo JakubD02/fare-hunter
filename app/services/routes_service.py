@@ -7,19 +7,13 @@ from app.schemas.route import RouteCreate, RouteUpdate
 
 
 def list_routes(db: Session, user: User) -> list[Route]:
-    query = (
-        select(Route).where(Route.user_id == user.id).order_by(Route.created_at.desc())
-    )
+    query = select(Route).where(Route.user_id == user.id).order_by(Route.created_at.desc())
 
     return list(db.execute(query).scalars().all())
 
 
 def get_route(db: Session, user: User, route_id: int):
-    query = (
-        select(Route)
-        .where(Route.user_id == user.id, Route.id == route_id)
-        .order_by(Route.created_at.desc())
-    )
+    query = select(Route).where(Route.user_id == user.id, Route.id == route_id).order_by(Route.created_at.desc())
 
     return db.execute(query).scalar_one_or_none()
 
@@ -43,9 +37,7 @@ def create_route(db: Session, user: User, route_in: RouteCreate) -> Route | None
     return route
 
 
-def update_route(
-    db: Session, user: User, route_id: int, route_in: RouteUpdate
-) -> Route | None:
+def update_route(db: Session, user: User, route_id: int, route_in: RouteUpdate) -> Route | None:
     route = get_route(db, user=user, route_id=route_id)
     if not route:
         return None

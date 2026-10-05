@@ -17,9 +17,7 @@ class AirportBase(BaseModel):
     name: str = Field(min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
     city: str = Field(min_length=CITY_MIN_LENGTH, max_length=CITY_MAX_LENGTH)
     country: str = Field(min_length=COUNTRY_MIN_LENGTH, max_length=COUNTRY_MAX_LENGTH)
-    country_code: str = Field(
-        min_length=COUNTRY_CODE_LENGTH, max_length=COUNTRY_CODE_LENGTH
-    )
+    country_code: str = Field(min_length=COUNTRY_CODE_LENGTH, max_length=COUNTRY_CODE_LENGTH)
 
     @field_validator("iata_code", "country_code")
     @classmethod
@@ -32,21 +30,11 @@ class AirportCreate(AirportBase):
 
 
 class AirportUpdate(BaseModel):
-    iata_code: str | None = Field(
-        default=None, min_length=IATA_CODE_LENGTH, max_length=IATA_CODE_LENGTH
-    )
-    name: str | None = Field(
-        default=None, min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH
-    )
-    city: str | None = Field(
-        default=None, min_length=CITY_MIN_LENGTH, max_length=CITY_MAX_LENGTH
-    )
-    country: str | None = Field(
-        default=None, min_length=COUNTRY_MIN_LENGTH, max_length=COUNTRY_MAX_LENGTH
-    )
-    country_code: str | None = Field(
-        default=None, min_length=COUNTRY_CODE_LENGTH, max_length=COUNTRY_CODE_LENGTH
-    )
+    iata_code: str | None = Field(default=None, min_length=IATA_CODE_LENGTH, max_length=IATA_CODE_LENGTH)
+    name: str | None = Field(default=None, min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
+    city: str | None = Field(default=None, min_length=CITY_MIN_LENGTH, max_length=CITY_MAX_LENGTH)
+    country: str | None = Field(default=None, min_length=COUNTRY_MIN_LENGTH, max_length=COUNTRY_MAX_LENGTH)
+    country_code: str | None = Field(default=None, min_length=COUNTRY_CODE_LENGTH, max_length=COUNTRY_CODE_LENGTH)
 
     @field_validator("iata_code", "country_code")
     @classmethod

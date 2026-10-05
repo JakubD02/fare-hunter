@@ -23,13 +23,9 @@ form_data_dependency = Annotated[OAuth2PasswordRequestForm, Depends()]
 
 @router.post("/token", response_model=TokenPair)
 async def login(db: db_dependency, form_data: form_data_dependency):
-    user = authenticate_user(
-        db=db, username=form_data.username, password=form_data.password
-    )
+    user = authenticate_user(db=db, username=form_data.username, password=form_data.password)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong login or password!"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong login or password!")
 
     return TokenPair(
         access_token=create_access_token(email=user.email, user_id=user.id),

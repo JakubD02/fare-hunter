@@ -12,9 +12,7 @@ def test_password_is_properly_hashed_in_db(db, registered_user, user_data):
 
     assert user_in_db is not None
     assert user_in_db.password_hash != registered_user["password"]
-    assert (
-        verify_password(registered_user["password"], user_in_db.password_hash) is True
-    )
+    assert verify_password(registered_user["password"], user_in_db.password_hash) is True
 
 
 def test_read_me_unauthorized_without_token(client):
@@ -35,9 +33,7 @@ def test_read_me_success(client, user_data, registered_user):
 
 
 def test_read_me_invalid_token(client):
-    response = client.get(
-        "/auth/me", headers={"Authorization": "Bearer invalid_token_123"}
-    )
+    response = client.get("/auth/me", headers={"Authorization": "Bearer invalid_token_123"})
     assert response.status_code == 401
 
 

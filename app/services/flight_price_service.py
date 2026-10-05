@@ -105,18 +105,12 @@ def get_history(db: Session, user: User, route_id: int) -> list[FlightPrice] | N
     if not route:
         return None
 
-    query = (
-        select(FlightPrice)
-        .where(FlightPrice.route_id == route_id)
-        .order_by(FlightPrice.fetched_at.desc())
-    )
+    query = select(FlightPrice).where(FlightPrice.route_id == route_id).order_by(FlightPrice.fetched_at.desc())
 
     return list(db.execute(query).scalars().all())
 
 
-def get_stats(
-    db: Session, user: User, route_id: int, days: int = 30
-) -> list[FlightPrice] | None:
+def get_stats(db: Session, user: User, route_id: int, days: int = 30) -> list[FlightPrice] | None:
     route = routes_service.get_route(db=db, user=user, route_id=route_id)
     if not route:
         return None

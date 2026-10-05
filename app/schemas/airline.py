@@ -23,12 +23,8 @@ class AirlineCreate(AirlineBase):
 
 
 class AirlineUpdate(BaseModel):
-    iata_code: str | None = Field(
-        default=None, min_length=IATA_CODE_LENGTH, max_length=IATA_CODE_LENGTH
-    )
-    name: str | None = Field(
-        default=None, min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH
-    )
+    iata_code: str | None = Field(default=None, min_length=IATA_CODE_LENGTH, max_length=IATA_CODE_LENGTH)
+    name: str | None = Field(default=None, min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
 
     @field_validator("iata_code")
     @classmethod

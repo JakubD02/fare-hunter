@@ -34,14 +34,10 @@ async def upsert_alert(
     route_id: int,
     alert_in: PriceAlertCreate,
 ):
-    alert = alert_service.upsert_alert(
-        db=db, user=current_user, route_id=route_id, alert_in=alert_in
-    )
+    alert = alert_service.upsert_alert(db=db, user=current_user, route_id=route_id, alert_in=alert_in)
 
     if not alert:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found.")
 
     send_alert_confirmation_email_task.delay(
         user_id=str(current_user.id),
@@ -52,12 +48,8 @@ async def upsert_alert(
 
 
 @router.delete("/{route_id}/alert", status_code=status.HTTP_204_NO_CONTENT)
-async def remove_alert(
-    db: db_dependency, current_user: CurrentUser, route_id: int
-) -> None:
+async def remove_alert(db: db_dependency, current_user: CurrentUser, route_id: int) -> None:
     deleted = alert_service.remove_alert(db=db, user=current_user, route_id=route_id)
 
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found.")

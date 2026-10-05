@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -39,7 +38,7 @@ def get_current_user(
     except JWTError:
         raise credentials_exception
 
-    user = db.execute(select(User).where(User.id == UUID(user_id))).scalar_one_or_none()
+    user = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
 
     if user is None or not user.is_active:
         raise credentials_exception
@@ -50,28 +49,22 @@ def get_current_user(
 CurrentUser = Annotated[dict, Depends(get_current_user)]
 
 
-def create_access_token(email: str, user_id: UUID) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    )
+def create_access_token(email: str, user_id: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": email,
-        "user_id": str(user_id),
+        "user_id": user_id,
         "exp": expire,
         "type": "access",
     }
-    return jwt.encode(
-        payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-    )
+    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
-def create_refresh_token(email: str, user_id: UUID) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(
-        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-    )
+def create_refresh_token(email: str, user_id: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     payload = {
         "sub": email,
-        "user_id": str(user_id),
+        "user_id": user_id,
         "exp": expire,
         "type": "refresh",
     }
@@ -79,9 +72,7 @@ def create_refresh_token(email: str, user_id: UUID) -> str:
 
 
 def decode_refresh_token(token: str) -> dict:
-    payload = jwt.decode(
-        token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
-    )
+    payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
     if payload.get("type") != "refresh":
         raise JWTError("Not a refresh token")
     return payload

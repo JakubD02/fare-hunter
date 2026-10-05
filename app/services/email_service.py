@@ -38,9 +38,7 @@ class EmailService:
             logger.error(f"Failed to send email to {to_email}: {e}")
             return False
 
-    def send_price_alert_email(
-        self, to_email: str, route: str, old_price: float, new_price: float
-    ) -> bool:
+    def send_price_alert_email(self, to_email: str, route: str, old_price: float, new_price: float) -> bool:
         """Send price drop notification"""
         subject = f"✈️ Price Drop Alert: {route}"
 
@@ -82,9 +80,7 @@ Fare Hunter Team
             html_body=html_body,
         )
 
-    def send_alert_confirmation_email(
-        self, to_email: str, route: str, threshold: float
-    ) -> bool:
+    def send_alert_confirmation_email(self, to_email: str, route: str, threshold: float) -> bool:
         """Send confirmation when alert is created"""
         subject = f"Alert Created: {route}"
 

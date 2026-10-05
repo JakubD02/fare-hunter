@@ -28,9 +28,7 @@ def fetch_prices(
         all_prices.append(
             {
                 "airline_id": random.choice(airlines_id),
-                "price": Decimal(
-                    str(round(random.uniform(MOCK_PRICE_MIN, MOCK_PRICE_MAX), 2))
-                ),
+                "price": Decimal(str(round(random.uniform(MOCK_PRICE_MIN, MOCK_PRICE_MAX), 2))),
                 "currency": Currency.PLN,
                 "origin_code": origin_code,
                 "departure_date": departure_date,

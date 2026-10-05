@@ -21,9 +21,7 @@ def get_alert(db: Session, user: User, route_id: int) -> PriceAlert | None:
     return db.execute(query).scalar_one_or_none()
 
 
-def upsert_alert(
-    db: Session, user: User, route_id: int, alert_in: PriceAlertUpdate
-) -> PriceAlert | None:
+def upsert_alert(db: Session, user: User, route_id: int, alert_in: PriceAlertUpdate) -> PriceAlert | None:
     route = routes_service.get_route(db=db, user=user, route_id=route_id)
     if not route:
         return None

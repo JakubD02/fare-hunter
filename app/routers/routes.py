@@ -21,9 +21,7 @@ async def list_routes(db: db_dependency, current_user: CurrentUser):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=RouteRead)
-async def create_route(
-    db: db_dependency, current_user: CurrentUser, route_in: RouteCreate
-):
+async def create_route(db: db_dependency, current_user: CurrentUser, route_in: RouteCreate):
     route = rs.create_route(db=db, user=current_user, route_in=route_in)
 
     fetch_prices_for_route.delay(route_id=route.id)
@@ -37,28 +35,18 @@ async def get_route(db: db_dependency, current_user: CurrentUser, route_id: int)
 
 
 @router.patch("/{route_id}", response_model=RouteRead)
-async def update_route(
-    db: db_dependency, current_user: CurrentUser, route_in: RouteUpdate, route_id: int
-):
-    route = rs.update_route(
-        db=db, user=current_user, route_id=route_id, route_in=route_in
-    )
+async def update_route(db: db_dependency, current_user: CurrentUser, route_in: RouteUpdate, route_id: int):
+    route = rs.update_route(db=db, user=current_user, route_id=route_id, route_in=route_in)
 
     if not route:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Route not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found.")
 
     return route
 
 
 @router.delete("/{route_id}")
-async def remove_route(
-    db: db_dependency, current_user: CurrentUser, route_id: int
-) -> None:
+async def remove_route(db: db_dependency, current_user: CurrentUser, route_id: int) -> None:
     deleted = rs.remove_route(db=db, user=current_user, route_id=route_id)
 
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Route not found."
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found.")

@@ -45,7 +45,7 @@ def fetch_prices_for_route(self, route_id: int) -> int:
 
         stmt = select(PriceAlert).where(
             PriceAlert.route_id == route_id,
-            PriceAlert.is_active == True,
+            PriceAlert.is_active,
         )
         alert = db.execute(stmt).scalar_one_or_none()
 
@@ -53,9 +53,7 @@ def fetch_prices_for_route(self, route_id: int) -> int:
             return 1
 
         if price_data["price"] < alert.threshold_price:
-            logger.warning(
-                f"Price drop! ${price_data['price']} < ${alert.threshold_price}"
-            )
+            logger.warning(f"Price drop! ${price_data['price']} < ${alert.threshold_price}")
 
             stmt = (
                 select(FlightPrice)
@@ -96,12 +94,7 @@ def fetch_prices_for_route(self, route_id: int) -> int:
 def fetch_all_prices_periodic() -> int:
     db = SessionLocal()
     try:
-        stmt = (
-            select(Route)
-            .join(PriceAlert)
-            .where(PriceAlert.is_active == True)
-            .distinct()
-        )
+        stmt = select(Route).join(PriceAlert).where(PriceAlert.is_active).distinct()
         routes = db.execute(stmt).scalars().all()
 
         logger.info(f"Found {len(routes)} routes with alerts")
@@ -120,42 +113,3 @@ def fetch_all_prices_periodic() -> int:
 
     finally:
         db.close()
-
-
-# @shared_task
-# def fetch_prices_for_route(route_id: int) -> int:
-#     db = SessionLocal()
-#     try:
-#         stmt = select(Route).where(Route.id == route_id)
-#         route = db.execute(stmt).scalar_one_or_none()
-#         if not route:
-#             return 0
-
-#         airline_ids = list(db.execute(select(Airline.id)).scalars().all())
-#         if not airline_ids:
-#             return 0
-
-#         prices_data = fetch_prices(
-#             origin_code=route.origin.code,
-#             destination_code=route.destination.code,
-#             departure_date=route.departure_date,
-#             return_date=route.return_date,
-#             airlines_id=airline_ids,
-#         )
-
-#         saved_count = 0
-#         for price_data in prices_data:
-#             flight_price = FlightPrice(
-#                 route_id=route.id,
-#                 **price_data,
-#             )
-#             db.add(flight_price)
-#             saved_count += 1
-
-#         db.commit()
-#         return saved_count
-#     except Exception:
-#         db.rollback()
-#         raise
-#     finally:
-#         db.close()
