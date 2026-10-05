@@ -33,6 +33,7 @@ A FastAPI-based flight price tracker with real-time alerts and email notificatio
 | **Testing** | pytest + pytest-asyncio |
 | **Containerization** | Docker & Docker Compose |
 | **Linting** | Ruff |
+| **Package Manager** | uv |
 
 ---
 
@@ -107,7 +108,7 @@ fare-hunter/
 ### Prerequisites
 
 - Docker & Docker Compose
-- Python 3.13+ (for local development)
+- Python 3.12+ (for local development)
 - PostgreSQL 15+ (if running outside Docker)
 - Redis 7+ (if running outside Docker)
 
@@ -352,17 +353,17 @@ Every 8 hours (3 times/day), Celery Beat:
 Run tests locally:
 
 ```bash
-# Install dev dependencies
-pip install -r requirements.txt
+# Install uv (if not already installed)
+pip install uv
+
+# Install all dependencies (including dev)
+uv sync
 
 # Run all tests
-pytest
+uv run pytest
 
 # Run specific test
-pytest tests/auth/test_register.py -v
-
-# Run with coverage
-pytest --cov=app --cov-report=html
+uv run pytest tests/auth/test_register.py -v
 ```
 
 **Test Structure:**
