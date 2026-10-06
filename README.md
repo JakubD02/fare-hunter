@@ -31,6 +31,7 @@ A FastAPI-based flight price tracker with real-time alerts and email notificatio
 | **Auth** | JWT (PyJWT) |
 | **Validation** | Pydantic v2 |
 | **Testing** | pytest + pytest-asyncio |
+| **Type Checking** | MyPy 1.7.1 |
 | **Containerization** | Docker & Docker Compose |
 | **Linting** | Ruff |
 | **Package Manager** | uv |
@@ -348,6 +349,32 @@ Every 8 hours (3 times/day), Celery Beat:
 
 ---
 
+## 🔍 Code Quality & Type Safety
+
+### Type Checking with MyPy
+
+We use **MyPy** for static type checking to ensure code correctness:
+
+```bash
+# Run type checker
+uv run mypy app
+
+# Type check specific file
+uv run mypy app/services/routes_service.py
+```
+
+### Code Formatting & Linting
+
+```bash
+# Format code with Black
+uv run black app tests
+
+# Lint with Ruff
+uv run ruff check app tests
+```
+
+---
+
 ## 🧪 Testing
 
 Run tests locally:
@@ -364,12 +391,22 @@ uv run pytest
 
 # Run specific test
 uv run pytest tests/auth/test_register.py -v
+
+# Run with coverage
+uv run pytest --cov=app tests/
 ```
 
 **Test Structure:**
 - `tests/auth/` - Login, registration, JWT
 - `tests/routes/` - Create, list, update, delete routes
 - `tests/alerts/` - Alert CRUD
+
+### Type Checking
+
+```bash
+# Check types with MyPy
+uv run mypy app
+```
 
 ---
 
