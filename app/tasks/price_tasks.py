@@ -24,8 +24,8 @@ def fetch_prices_for_route(self, route_id: int) -> int:
             return 0
 
         price_data = flight_price_service.fetch_flight_price(
-            origin=route.origin.code,
-            destination=route.destination.code,
+            origin=route.origin_airport.iata_code,
+            destination=route.destination_airport.iata_code,
             departure_date=route.departure_date.isoformat(),
         )
 
@@ -44,8 +44,8 @@ def fetch_prices_for_route(self, route_id: int) -> int:
         logger.info(f"Saved price for route {route_id}")
 
         stmt = select(PriceAlert).where(
-            PriceAlert.route_id == route_id,
-            PriceAlert.is_active,
+            (PriceAlert.route_id == route_id) &
+            (PriceAlert.is_active)
         )
         alert = db.execute(stmt).scalar_one_or_none()
 
@@ -54,32 +54,34 @@ def fetch_prices_for_route(self, route_id: int) -> int:
 
         if price_data["price"] < alert.threshold_price:
             logger.warning(f"Price drop! ${price_data['price']} < ${alert.threshold_price}")
-
-            stmt = (
-                select(FlightPrice)
-                .where(
-                    FlightPrice.route_id == route_id,
-                    FlightPrice.id != flight_price.id,
-                )
-                .order_by(FlightPrice.created_at.desc())
-                .limit(1)
-            )
-
-            prev = db.execute(stmt).scalar_one_or_none()
-            old_price = prev.price if prev else price_data["price"]
-
-            send_price_drop_email_task.delay(
-                user_id=str(route.user_id),
-                route_id=route.id,
-                old_price=old_price,
-                new_price=price_data["price"],
-            )
-
             return 1
+
+        prev_price_stmt = (
+            select(FlightPrice)
+            .where(
+                (FlightPrice.route_id == route_id) &
+                (FlightPrice.id != flight_price.id)
+            )
+            .order_by(FlightPrice.id.desc())
+            .limit(1)
+        )
+
+        prev = db.execute(prev_price_stmt).scalar_one_or_none()
+        old_price = prev.price if prev else price_data["price"]
+
+        send_price_drop_email_task.delay(
+            user_id=str(route.user_id),
+            route_id=route.id,
+            old_price=old_price,
+            new_price=price_data["price"],
+        )
+
+        return 1
 
     except TaskExecutionError as e:
         logger.error(f"Network error: {e}")
         self.retry(exc=e, countdown=300)
+        return 0
 
     except Exception as e:
         logger.error(f"Unexpected error: {e}")

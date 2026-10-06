@@ -1,8 +1,9 @@
 from datetime import date, datetime
 
 from sqlalchemy import ForeignKey, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.models.airport import Airport
 from app.models.base import Base
 
 
@@ -22,3 +23,5 @@ class Route(Base):
     return_date: Mapped[date | None] = mapped_column()
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
+    origin_airport: Mapped["Airport"] = relationship(foreign_keys=[origin_id])
+    destination_airport: Mapped["Airport"] = relationship(foreign_keys=[destination_id])

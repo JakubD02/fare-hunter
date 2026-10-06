@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import logger, requests
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+import logging
+import requests 
 
 from app.core.config import settings
 from app.core.exceptions import TaskExecutionError
@@ -10,6 +11,8 @@ from app.models.flight_price import FlightPrice
 from app.models.user import User
 from app.services import routes_service
 
+
+logger = logging.getLogger(__name__)
 
 class FlightPriceService:
     def __init__(self):
@@ -110,7 +113,7 @@ def get_history(db: Session, user: User, route_id: int) -> list[FlightPrice] | N
     return list(db.execute(query).scalars().all())
 
 
-def get_stats(db: Session, user: User, route_id: int, days: int = 30) -> list[FlightPrice] | None:
+def get_stats(db: Session, user: User, route_id: int, days: int = 30) -> dict | None:
     route = routes_service.get_route(db=db, user=user, route_id=route_id)
     if not route:
         return None

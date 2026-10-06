@@ -46,7 +46,7 @@ def get_current_user(
     return user
 
 
-CurrentUser = Annotated[dict, Depends(get_current_user)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
 def create_access_token(email: str, user_id: str) -> str:

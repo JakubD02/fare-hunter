@@ -6,7 +6,7 @@ from starlette import status
 
 from app.core.security import CurrentUser
 from app.database import get_db
-from app.schemas.price_alert import PriceAlertCreate, PriceAlertRead
+from app.schemas.price_alert import PriceAlertCreate, PriceAlertRead, PriceAlertUpdate
 from app.services import alert_service
 from app.tasks.email_tasks import send_alert_confirmation_email_task
 
@@ -32,7 +32,7 @@ async def upsert_alert(
     db: db_dependency,
     current_user: CurrentUser,
     route_id: int,
-    alert_in: PriceAlertCreate,
+    alert_in: PriceAlertUpdate,
 ):
     alert = alert_service.upsert_alert(db=db, user=current_user, route_id=route_id, alert_in=alert_in)
 
