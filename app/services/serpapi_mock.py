@@ -1,7 +1,3 @@
-# majac origin + destination code, departure, return date, airlines id
-# tworzymy liste z M slownikami z powyzszymi danymi
-# sortujemy je po cenie i zwracamy N rekordow
-
 import random
 from datetime import date
 from decimal import Decimal
@@ -36,5 +32,5 @@ def fetch_prices(
             }
         )
 
-    all_prices.sort(key=lambda p: p["price"])
+    all_prices.sort(key=lambda p: float(p["price"]))
     return all_prices[:MOCK_NUM_RESULTS]

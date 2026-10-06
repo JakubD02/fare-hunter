@@ -28,11 +28,15 @@ def send_alert_confirmation_email_task(self, user_id: str, alert_id: int):
             logger.warning(f"Alert {alert_id} not found")
             return
 
-        route = alert.route
+        route = db.query(Route).filter(Route.id == alert.route_id).first()
+        if not route:
+            logger.warning(f"Route {alert.route_id} not found")
+            return
+            
         success = email_service.send_alert_confirmation_email(
             to_email=user.email,
-            route=f"{route.origin} -> {route.destination}",
-            threshold=alert.price_threshold,
+            route=f"{route.origin_id} -> {route.destination_id}",
+            threshold=float(alert.threshold_price),
         )
 
         if not success:
@@ -65,7 +69,7 @@ def send_price_drop_email_task(self, user_id: str, route_id: int, old_price: flo
 
         success = email_service.send_price_alert_email(
             to_email=user.email,
-            route=f"{route.origin} → {route.destination}",
+            route=f"{route.origin_id} → {route.destination_id}",
             old_price=old_price,
             new_price=new_price,
         )

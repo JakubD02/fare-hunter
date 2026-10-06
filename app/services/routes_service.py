@@ -12,7 +12,7 @@ def list_routes(db: Session, user: User) -> list[Route]:
     return list(db.execute(query).scalars().all())
 
 
-def get_route(db: Session, user: User, route_id: int):
+def get_route(db: Session, user: User, route_id: int) -> Route | None:
     query = select(Route).where(Route.user_id == user.id, Route.id == route_id).order_by(Route.created_at.desc())
 
     return db.execute(query).scalar_one_or_none()

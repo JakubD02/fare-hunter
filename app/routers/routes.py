@@ -24,6 +24,9 @@ async def list_routes(db: db_dependency, current_user: CurrentUser):
 async def create_route(db: db_dependency, current_user: CurrentUser, route_in: RouteCreate):
     route = rs.create_route(db=db, user=current_user, route_in=route_in)
 
+    if not route:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found.")
+
     fetch_prices_for_route.delay(route_id=route.id)
 
     return route

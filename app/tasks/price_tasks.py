@@ -1,3 +1,4 @@
+from decimal import Decimal
 import logging
 
 from sqlalchemy import select
@@ -33,42 +34,43 @@ def fetch_prices_for_route(self, route_id: int) -> int:
             logger.warning(f"No price found for route {route_id}")
             return 0
 
+        price = Decimal(str(price_data["price"]))
+
         flight_price = FlightPrice(
             route_id=route.id,
-            price=price_data["price"],
-            airline=price_data["airline"],
+            price=price,
+            airline_id=price_data["airline"],
             currency=price_data["currency"],
         )
         db.add(flight_price)
         db.commit()
         logger.info(f"Saved price for route {route_id}")
 
-        stmt = select(PriceAlert).where((PriceAlert.route_id == route_id) & (PriceAlert.is_active))
-        alert = db.execute(stmt).scalar_one_or_none()
+        alert_stmt = select(PriceAlert).where((PriceAlert.route_id == route_id) & (PriceAlert.is_active == True))
+        alert = db.execute(alert_stmt).first()
 
         if not alert:
             return 1
 
-        if price_data["price"] < alert.threshold_price:
+        if price < alert.threshold_price:
             logger.warning(f"Price drop! ${price_data['price']} < ${alert.threshold_price}")
-            return 1
 
-        prev_price_stmt = (
-            select(FlightPrice)
-            .where((FlightPrice.route_id == route_id) & (FlightPrice.id != flight_price.id))
-            .order_by(FlightPrice.id.desc())
-            .limit(1)
-        )
+            prev_price_stmt = (
+                select(FlightPrice)
+                .where((FlightPrice.route_id == route_id) & (FlightPrice.id != flight_price.id))
+                .order_by(FlightPrice.id.desc())
+                .limit(1)
+            )
 
-        prev = db.execute(prev_price_stmt).scalar_one_or_none()
-        old_price = prev.price if prev else price_data["price"]
+            prev = db.execute(prev_price_stmt).scalar_one_or_none()
+            old_price = prev.price if prev else price
 
-        send_price_drop_email_task.delay(
-            user_id=str(route.user_id),
-            route_id=route.id,
-            old_price=old_price,
-            new_price=price_data["price"],
-        )
+            send_price_drop_email_task.delay(
+                user_id=str(route.user_id),
+                route_id=route.id,
+                old_price=old_price,
+                new_price=price,
+            )
 
         return 1
 
