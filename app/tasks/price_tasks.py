@@ -1,5 +1,5 @@
-from decimal import Decimal
 import logging
+from decimal import Decimal
 
 from sqlalchemy import select
 
@@ -46,7 +46,7 @@ def fetch_prices_for_route(self, route_id: int) -> int:
         db.commit()
         logger.info(f"Saved price for route {route_id}")
 
-        alert_stmt = select(PriceAlert).where((PriceAlert.route_id == route_id) & (PriceAlert.is_active == True))
+        alert_stmt = select(PriceAlert).where((PriceAlert.route_id == route_id) & (PriceAlert.is_active))
         alert = db.execute(alert_stmt).first()
 
         if not alert:

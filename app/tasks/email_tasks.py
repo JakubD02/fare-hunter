@@ -32,7 +32,7 @@ def send_alert_confirmation_email_task(self, user_id: str, alert_id: int):
         if not route:
             logger.warning(f"Route {alert.route_id} not found")
             return
-            
+
         success = email_service.send_alert_confirmation_email(
             to_email=user.email,
             route=f"{route.origin_id} -> {route.destination_id}",
