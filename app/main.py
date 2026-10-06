@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 
 from app.routers import alerts, auth, reference, routes, statistics
