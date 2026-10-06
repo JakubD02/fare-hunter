@@ -1,3 +1,4 @@
+import os
 from typing import ClassVar
 
 from celery.schedules import crontab
@@ -6,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # database
-    DATABASE_URL: str
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./fare_hunter.db")
 
     # redis & celery
     REDIS_URL: str = "redis://localhost:6379/0"
