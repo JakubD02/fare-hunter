@@ -43,10 +43,7 @@ def fetch_prices_for_route(self, route_id: int) -> int:
         db.commit()
         logger.info(f"Saved price for route {route_id}")
 
-        stmt = select(PriceAlert).where(
-            (PriceAlert.route_id == route_id) &
-            (PriceAlert.is_active)
-        )
+        stmt = select(PriceAlert).where((PriceAlert.route_id == route_id) & (PriceAlert.is_active))
         alert = db.execute(stmt).scalar_one_or_none()
 
         if not alert:
@@ -58,10 +55,7 @@ def fetch_prices_for_route(self, route_id: int) -> int:
 
         prev_price_stmt = (
             select(FlightPrice)
-            .where(
-                (FlightPrice.route_id == route_id) &
-                (FlightPrice.id != flight_price.id)
-            )
+            .where((FlightPrice.route_id == route_id) & (FlightPrice.id != flight_price.id))
             .order_by(FlightPrice.id.desc())
             .limit(1)
         )

@@ -6,7 +6,7 @@ from starlette import status
 
 from app.core.security import CurrentUser
 from app.database import get_db
-from app.schemas.price_alert import PriceAlertCreate, PriceAlertRead, PriceAlertUpdate
+from app.schemas.price_alert import PriceAlertRead, PriceAlertUpdate
 from app.services import alert_service
 from app.tasks.email_tasks import send_alert_confirmation_email_task
 
