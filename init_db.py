@@ -1,7 +1,6 @@
-
 from app.database import engine
 from app.models.base import Base
-from scripts import seed_data
+from scripts.seed_data import seed_data
 
 
 def init_db():

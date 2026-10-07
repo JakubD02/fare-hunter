@@ -21,7 +21,7 @@ class PriceAlert(Base):
     __tablename__ = "price_alerts"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid_string)
-    route_id: Mapped[int] = mapped_column(ForeignKey("routes.id"), unique=True, nullable=False)
+    route_id: Mapped[str] = mapped_column(ForeignKey("routes.id"), unique=True, nullable=False)
     threshold_price: Mapped[Decimal] = mapped_column(Numeric(PRICE_MAX_DIGITS, PRICE_DECIMAL_PLACES), nullable=False)
     currency: Mapped[Currency] = mapped_column(SqlEnum(Currency), default=Currency.PLN, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)

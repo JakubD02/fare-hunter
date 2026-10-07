@@ -1,6 +1,6 @@
-from sqlalchemy import engine
 from sqlalchemy.orm import Session
 
+from app.database import engine
 from app.models import Airline, Airport
 from scripts.data import AIRLINES_DATA, AIRPORTS_DATA
 

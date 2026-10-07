@@ -43,6 +43,6 @@ class AirportUpdate(BaseModel):
 
 
 class AirportRead(AirportBase):
-    id: int
+    id: str
 
     model_config = ConfigDict(from_attributes=True)

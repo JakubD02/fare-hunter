@@ -33,6 +33,6 @@ class AirlineUpdate(BaseModel):
 
 
 class AirlineRead(AirlineBase):
-    id: int
+    id: str
 
     model_config = ConfigDict(from_attributes=True)

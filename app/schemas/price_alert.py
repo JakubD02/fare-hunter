@@ -37,8 +37,8 @@ class PriceAlertUpdate(BaseModel):
 
 
 class PriceAlertRead(PriceAlertBase):
-    id: int
-    route_id: int
+    id: str
+    route_id: str
     last_notified_at: datetime | None
 
     model_config = ConfigDict(from_attributes=True)

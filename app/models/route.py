@@ -17,8 +17,8 @@ class Route(Base):
         nullable=False,
         index=True,
     )
-    origin_id: Mapped[int] = mapped_column(ForeignKey("airports.id"), nullable=False, index=True)
-    destination_id: Mapped[int] = mapped_column(ForeignKey("airports.id"), nullable=False, index=True)
+    origin_id: Mapped[str] = mapped_column(ForeignKey("airports.id"), nullable=False, index=True)
+    destination_id: Mapped[str] = mapped_column(ForeignKey("airports.id"), nullable=False, index=True)
     departure_date: Mapped[date] = mapped_column(nullable=False)
     return_date: Mapped[date | None] = mapped_column()
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)

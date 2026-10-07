@@ -19,7 +19,7 @@ class FlightPriceBase(BaseModel):
 
 
 class FlightStats(BaseModel):
-    route_id: int
+    route_id: str
     period_days: int
     sample_count: int
     min_price: Decimal | None
@@ -28,9 +28,9 @@ class FlightStats(BaseModel):
 
 
 class FlightPriceRead(FlightPriceBase):
-    id: int
-    route_id: int
-    airline_id: int
+    id: str
+    route_id: str
+    airline_id: str
     fetched_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

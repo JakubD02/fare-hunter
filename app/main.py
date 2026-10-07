@@ -2,12 +2,6 @@ from fastapi import FastAPI
 
 from app.routers import alerts, auth, reference, routes, statistics
 
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     Base.metadata.create_all(engine)
-#     yield
-
-
 app = FastAPI(
     title="Fare hunter - flight tracker API",
     description="lorem ipsum",

@@ -66,4 +66,42 @@ jobs:
           SENDGRID_API_KEY: test-key
           SERPAPI_KEY: test-key
           APP_URL: http://localhost:8000
-        run: uv run pytest 
+        run: uv run pytest
+
+  audit-dependencies:
+    name: Audit dependencies for vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run pip-audit
+        run: uv run pip-audit
+
+  detect-secrets:
+    name: Detect hardcoded secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          wget https://github.com/gitleaks/gitleaks/releases/download/v8.21.4/gitleaks-linux-x64
+          chmod +x gitleaks-linux-x64
+
+      - name: Run gitleaks
+        run: ./gitleaks-linux-x64 detect --no-git --verbose
