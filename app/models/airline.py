@@ -1,13 +1,14 @@
+
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.constants.airline import IATA_CODE_LENGTH, NAME_MAX_LENGTH
-from app.models.base import Base
+from app.models.base import Base, generate_uuid_string
 
 
 class Airline(Base):
     __tablename__ = "airlines"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid_string)
     iata_code: Mapped[str] = mapped_column(String(IATA_CODE_LENGTH), unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(NAME_MAX_LENGTH), nullable=False)

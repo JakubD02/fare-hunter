@@ -47,7 +47,7 @@ def fetch_prices_for_route(self, route_id: int) -> int:
         logger.info(f"Saved price for route {route_id}")
 
         alert_stmt = select(PriceAlert).where((PriceAlert.route_id == route_id) & (PriceAlert.is_active))
-        alert = db.execute(alert_stmt).first()
+        alert = db.execute(alert_stmt).scalar_one_or_none()
 
         if not alert:
             return 1

@@ -1,10 +1,11 @@
-from app.database import SessionLocal
+from sqlalchemy import engine
+from sqlalchemy.orm import Session
+
 from app.models import Airline, Airport
-from scripts.data.airlines import AIRLINES_DATA
-from scripts.data.airports import AIRPORTS_DATA
+from scripts.data import AIRLINES_DATA, AIRPORTS_DATA
 
 
-def seed_airports(db):
+def seed_airports(db: Session):
     if db.query(Airport).first():
         print("Airports already seeded, skipping")
         return
@@ -14,7 +15,7 @@ def seed_airports(db):
     db.commit()
 
 
-def seed_airlines(db):
+def seed_airlines(db: Session):
     if db.query(Airline).first():
         print("Airlines already seeded, skipping")
         return
@@ -24,15 +25,11 @@ def seed_airlines(db):
     db.commit()
 
 
-def main():
-    """Main function - creates session, calls seed functions."""
-    db = SessionLocal()
-    try:
-        seed_airports(db)
-        seed_airlines(db)
-    finally:
-        db.close()
+def seed_data() -> None:
+    with Session(engine) as session:
+        seed_airports(session)
+        seed_airlines(session)
 
 
 if __name__ == "__main__":
-    main()
+    seed_data()

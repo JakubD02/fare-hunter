@@ -1,0 +1,72 @@
+[
+  {
+    "iata_code": "JFK",
+    "name": "John F. Kennedy International",
+    "city": "New York",
+    "country": "United States",
+    "country_code": "US"
+  },
+  {
+    "iata_code": "LHR",
+    "name": "London Heathrow",
+    "city": "London",
+    "country": "United Kingdom",
+    "country_code": "GB"
+  },
+  {
+    "iata_code": "CDG",
+    "name": "Charles de Gaulle",
+    "city": "Paris",
+    "country": "France",
+    "country_code": "FR"
+  },
+  {
+    "iata_code": "AMS",
+    "name": "Amsterdam Airport Schiphol",
+    "city": "Amsterdam",
+    "country": "Netherlands",
+    "country_code": "NL"
+  },
+  {
+    "iata_code": "DUB",
+    "name": "Dublin Airport",
+    "city": "Dublin",
+    "country": "Ireland",
+    "country_code": "IE"
+  },
+  {
+    "iata_code": "WAW",
+    "name": "Warsaw Chopin",
+    "city": "Warsaw",
+    "country": "Poland",
+    "country_code": "PL"
+  },
+  {
+    "iata_code": "WRO",
+    "name": "Wrocław Nicolaus Copernicus",
+    "city": "Wrocław",
+    "country": "Poland",
+    "country_code": "PL"
+  },
+  {
+    "iata_code": "KRK",
+    "name": "Kraków John Paul II",
+    "city": "Kraków",
+    "country": "Poland",
+    "country_code": "PL"
+  },
+  {
+    "iata_code": "LAX",
+    "name": "Los Angeles International",
+    "city": "Los Angeles",
+    "country": "United States",
+    "country_code": "US"
+  },
+  {
+    "iata_code": "ORD",
+    "name": "Chicago O'Hare",
+    "city": "Chicago",
+    "country": "United States",
+    "country_code": "US"
+  }
+]

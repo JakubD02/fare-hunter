@@ -4,13 +4,13 @@ from sqlalchemy import ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.airport import Airport
-from app.models.base import Base
+from app.models.base import Base, generate_uuid_string
 
 
 class Route(Base):
     __tablename__ = "routes"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(primary_key=True, default=generate_uuid_string)
     user_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("users.id", ondelete="CASCADE"),

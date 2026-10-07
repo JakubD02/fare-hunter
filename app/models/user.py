@@ -1,5 +1,4 @@
 from datetime import datetime
-from uuid import uuid4
 
 from sqlalchemy import String, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -9,11 +8,7 @@ from app.constants.user import (
     FIRST_NAME_MAX_LENGTH,
     PASSWORD_HASH_MAX_LENGTH,
 )
-from app.models.base import Base
-
-
-def generate_uuid_string() -> str:
-    return str(uuid4())
+from app.models.base import Base, generate_uuid_string
 
 
 class User(Base):

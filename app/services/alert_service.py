@@ -30,7 +30,7 @@ def upsert_alert(db: Session, user: User, route_id: int, alert_in: PriceAlertUpd
 
     if alert:
         # Update existing alert
-        data = alert_in.model_dump()
+        data = alert_in.model_dump(exclude_unset=True)
         for field, value in data.items():
             setattr(alert, field, value)
     else:

@@ -15,13 +15,13 @@ from app.constants.price import (
     PRICE_MAX_DIGITS,
 )
 from app.enums.currency import Currency
-from app.models.base import Base
+from app.models.base import Base, generate_uuid_string
 
 
 class FlightPrice(Base):
     __tablename__ = "flight_prices"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid_string)
     route_id: Mapped[int] = mapped_column(ForeignKey("routes.id"), nullable=False)
     airline_id: Mapped[int] = mapped_column(ForeignKey("airlines.id"), nullable=False)
     price: Mapped[Decimal] = mapped_column(Numeric(PRICE_MAX_DIGITS, PRICE_DECIMAL_PLACES), nullable=False)

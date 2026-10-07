@@ -1,0 +1,34 @@
+[
+  {
+    "iata_code": "LO",
+    "name": "LOT Polish Airlines"
+  },
+  {
+    "iata_code": "BA",
+    "name": "British Airways"
+  },
+  {
+    "iata_code": "AF",
+    "name": "Air France"
+  },
+  {
+    "iata_code": "KL",
+    "name": "KLM Royal Dutch Airlines"
+  },
+  {
+    "iata_code": "EI",
+    "name": "Aer Lingus"
+  },
+  {
+    "iata_code": "UA",
+    "name": "United Airlines"
+  },
+  {
+    "iata_code": "AA",
+    "name": "American Airlines"
+  },
+  {
+    "iata_code": "LH",
+    "name": "Lufthansa"
+  }
+]
