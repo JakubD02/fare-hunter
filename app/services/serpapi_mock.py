@@ -1,6 +1,7 @@
 import random
 from datetime import date
 from decimal import Decimal
+from typing import TypedDict
 
 from app.constants.mock import (
     MOCK_NUM_RESULTS,
@@ -11,15 +12,24 @@ from app.constants.mock import (
 from app.enums.currency import Currency
 
 
+class MockFlightPrice(TypedDict):
+    airline_id: int
+    price: Decimal
+    currency: Currency
+    origin_code: str
+    departure_date: date
+    return_date: date
+
+
 def fetch_prices(
     origin_code: str,
     destination_code: str,
     departure_date: date,
     return_date: date,
     airlines_id: list[int],
-) -> list[dict]:
+) -> list[MockFlightPrice]:
     """Generate fake flight prices"""
-    all_prices = []
+    all_prices: list[MockFlightPrice] = []
     for i in range(MOCK_TOTAL_GENERATED):
         all_prices.append(
             {

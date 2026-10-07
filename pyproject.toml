@@ -41,6 +41,9 @@ dev = [
     "httpx==0.25.2",
     "mypy==1.7.1",
     "types-passlib",
+    "pip-audit>=2.10.1",
+    "types-requests>=2.33.0.20261006",
+    "types-python-jose>=3.5.0.20260408",
 ]
 
 [tool.hatch.build.targets.wheel]
