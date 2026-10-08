@@ -22,10 +22,12 @@ async def list_routes(db: db_dependency, current_user: CurrentUser):
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=RouteRead)
 async def create_route(db: db_dependency, current_user: CurrentUser, route_in: RouteCreate):
-    route = rs.create_route(db=db, user=current_user, route_in=route_in)
-
-    if not route:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found.")
+    try:
+        route = rs.create_route(db=db, user=current_user, route_in=route_in)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
     fetch_prices_for_route.delay(route_id=route.id)
 

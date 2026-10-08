@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models.airport import Airport
 from app.models.route import Route
 from app.models.user import User
 from app.schemas.route import RouteCreate, RouteUpdate
@@ -18,9 +19,17 @@ def get_route(db: Session, user: User, route_id: int) -> Route | None:
     return db.execute(query).scalar_one_or_none()
 
 
-def create_route(db: Session, user: User, route_in: RouteCreate) -> Route | None:
+def create_route(db: Session, user: User, route_in: RouteCreate) -> Route:
+    origin = db.query(Airport).filter(Airport.id == route_in.origin_id).first()
+    if not origin:
+        raise LookupError(f"Origin airport with id {route_in.origin_id} not found")
+
+    destination = db.query(Airport).filter(Airport.id == route_in.destination_id).first()
+    if not destination:
+        raise LookupError(f"Destination airport with id {route_in.destination_id} not found")
+
     if route_in.origin_id == route_in.destination_id:
-        return None
+        raise ValueError("origin_id and destination_id must be different")
 
     route = Route(
         user_id=user.id,

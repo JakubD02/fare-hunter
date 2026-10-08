@@ -57,6 +57,9 @@ jobs:
       - name: Run mypy type check
         run: uv run mypy app
 
+      - name: Run Bandit security analysis
+        run: uv run bandit -r app -f json -o bandit-report.json || true
+
       - name: Run pytest
         env:
           DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/fare_hunter
