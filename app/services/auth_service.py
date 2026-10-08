@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from jose import JWTError
+from jwt import InvalidTokenError as JWTError
 from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -78,6 +78,6 @@ def refresh_access_token(db: Session, refresh_token: str) -> str | None:
     if user is None or not user.is_active:
         return None
 
-    new_access_token = create_access_token(user.email, user.id)
+    new_access_token = create_access_token(user.email, str(user.id))
 
     return new_access_token
