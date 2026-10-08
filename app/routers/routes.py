@@ -34,7 +34,12 @@ async def create_route(db: db_dependency, current_user: CurrentUser, route_in: R
 
 @router.get("/{route_id}", response_model=RouteRead)
 async def get_route(db: db_dependency, current_user: CurrentUser, route_id: int):
-    return rs.get_route(db=db, user=current_user, route_id=route_id)
+    route = rs.get_route(db=db, user=current_user, route_id=route_id)
+
+    if not route:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found.")
+
+    return route
 
 
 @router.patch("/{route_id}", response_model=RouteRead)
