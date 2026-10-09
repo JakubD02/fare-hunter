@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.exceptions import TaskExecutionError
 from app.models.flight_price import FlightPrice
 from app.models.user import User
-from app.services import routes_service
+from app.services import route_service
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,7 @@ class FlightPriceService:
 
 
 def get_history(db: Session, user: User, route_id: int) -> list[FlightPrice] | None:
-    route = routes_service.get_route(db=db, user=user, route_id=route_id)
+    route = route_service.get_route(db=db, user=user, route_id=route_id)
     if not route:
         return None
 
@@ -114,7 +114,7 @@ def get_history(db: Session, user: User, route_id: int) -> list[FlightPrice] | N
 
 
 def get_stats(db: Session, user: User, route_id: int, days: int = 30) -> dict | None:
-    route = routes_service.get_route(db=db, user=user, route_id=route_id)
+    route = route_service.get_route(db=db, user=user, route_id=route_id)
     if not route:
         return None
 

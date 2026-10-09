@@ -12,10 +12,10 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 
 @router.get("/airports")
-async def list_airports(db: db_dependency):
+def list_airports(db: db_dependency):
     return reference_service.list_airports(db)
 
 
 @router.get("/airlines")
-async def list_airlines(db: db_dependency):
+def list_airlines(db: db_dependency):
     return reference_service.list_airlines(db)

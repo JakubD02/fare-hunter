@@ -7,7 +7,7 @@ from starlette import status
 from app.core.security import CurrentUser
 from app.database import get_db
 from app.schemas.route import RouteCreate, RouteRead, RouteUpdate
-from app.services import routes_service as rs
+from app.services import route_service as rs
 from app.tasks.price_tasks import fetch_prices_for_route
 
 router = APIRouter(prefix="/routes", tags=["routes"])
@@ -16,12 +16,12 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 
 @router.get("/")
-async def list_routes(db: db_dependency, current_user: CurrentUser):
+def list_routes(db: db_dependency, current_user: CurrentUser):
     return rs.list_routes(db, user=current_user)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=RouteRead)
-async def create_route(db: db_dependency, current_user: CurrentUser, route_in: RouteCreate):
+def create_route(db: db_dependency, current_user: CurrentUser, route_in: RouteCreate):
     try:
         route = rs.create_route(db=db, user=current_user, route_in=route_in)
     except ValueError as e:
@@ -35,7 +35,7 @@ async def create_route(db: db_dependency, current_user: CurrentUser, route_in: R
 
 
 @router.get("/{route_id}", response_model=RouteRead)
-async def get_route(db: db_dependency, current_user: CurrentUser, route_id: int):
+def get_route(db: db_dependency, current_user: CurrentUser, route_id: int):
     route = rs.get_route(db=db, user=current_user, route_id=route_id)
 
     if not route:
@@ -45,7 +45,7 @@ async def get_route(db: db_dependency, current_user: CurrentUser, route_id: int)
 
 
 @router.patch("/{route_id}", response_model=RouteRead)
-async def update_route(db: db_dependency, current_user: CurrentUser, route_in: RouteUpdate, route_id: int):
+def update_route(db: db_dependency, current_user: CurrentUser, route_in: RouteUpdate, route_id: int):
     route = rs.update_route(db=db, user=current_user, route_id=route_id, route_in=route_in)
 
     if not route:
@@ -55,7 +55,7 @@ async def update_route(db: db_dependency, current_user: CurrentUser, route_in: R
 
 
 @router.delete("/{route_id}")
-async def remove_route(db: db_dependency, current_user: CurrentUser, route_id: int) -> None:
+def remove_route(db: db_dependency, current_user: CurrentUser, route_id: int) -> None:
     deleted = rs.remove_route(db=db, user=current_user, route_id=route_id)
 
     if not deleted:

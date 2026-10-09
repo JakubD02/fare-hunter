@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.models.price_alert import PriceAlert
 from app.models.route import Route
 from app.models.user import User
-from app.schemas.price_alert import PriceAlertUpdate
-from app.services import routes_service
+from app.schemas.price_alert import PriceAlertCreate, PriceAlertUpdate
+from app.services import route_service
 
 
 def get_alert(db: Session, user: User, route_id: int) -> PriceAlert | None:
@@ -22,27 +22,26 @@ def get_alert(db: Session, user: User, route_id: int) -> PriceAlert | None:
 
 
 def upsert_alert(db: Session, user: User, route_id: int, alert_in: PriceAlertUpdate) -> PriceAlert | None:
-    route = routes_service.get_route(db=db, user=user, route_id=route_id)
+    route = route_service.get_route(db=db, user=user, route_id=route_id)
     if not route:
         return None
 
     alert = get_alert(db=db, user=user, route_id=route_id)
+    data = alert_in.model_dump(exclude_unset=True)
 
     if alert:
         # Update existing alert
-        data = alert_in.model_dump(exclude_unset=True)
         for field, value in data.items():
             setattr(alert, field, value)
     else:
         # Create new alert
-        alert = PriceAlert(
-            route_id=route_id,
-            threshold_price=alert_in.threshold_price,
-            currency=alert_in.currency,
-            is_active=alert_in.is_active,
-        )
-        db.add(alert)
+        try:
+            create_in = PriceAlertCreate(route_id=route_id, **data)
+            alert = PriceAlert(**create_in.model_dump())
+        except ValueError:
+            return None
 
+    db.add(alert)
     db.commit()
     db.refresh(alert)
     return alert

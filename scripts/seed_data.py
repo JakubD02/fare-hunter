@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import engine
@@ -6,7 +7,7 @@ from scripts.data import AIRLINES_DATA, AIRPORTS_DATA
 
 
 def seed_airports(db: Session):
-    if db.query(Airport).first():
+    if db.execute(select(Airline)).scalars().first():
         print("Airports already seeded, skipping")
         return
 
@@ -16,7 +17,7 @@ def seed_airports(db: Session):
 
 
 def seed_airlines(db: Session):
-    if db.query(Airline).first():
+    if db.execute(select(Airline)).scalars().first():
         print("Airlines already seeded, skipping")
         return
 

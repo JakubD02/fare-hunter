@@ -16,7 +16,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 
 @router.get("/{route_id}/alert", response_model=PriceAlertRead)
-async def get_alert(db: db_dependency, current_user: CurrentUser, route_id: int):
+def get_alert(db: db_dependency, current_user: CurrentUser, route_id: int):
     alert = alert_service.get_alert(db=db, user=current_user, route_id=route_id)
 
     if not alert:
@@ -28,7 +28,7 @@ async def get_alert(db: db_dependency, current_user: CurrentUser, route_id: int)
 
 
 @router.put("/{route_id}/alert", response_model=PriceAlertRead)
-async def upsert_alert(
+def upsert_alert(
     db: db_dependency,
     current_user: CurrentUser,
     route_id: int,

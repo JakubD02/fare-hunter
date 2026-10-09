@@ -20,11 +20,15 @@ def get_route(db: Session, user: User, route_id: int) -> Route | None:
 
 
 def create_route(db: Session, user: User, route_in: RouteCreate) -> Route:
-    origin = db.query(Airport).filter(Airport.id == route_in.origin_id).first()
+    origin = db.execute(
+        select(Airport).where(Airport.id == route_in.origin_id)
+    ).scalar_one_or_none()
     if not origin:
         raise LookupError(f"Origin airport with id {route_in.origin_id} not found")
 
-    destination = db.query(Airport).filter(Airport.id == route_in.destination_id).first()
+    destination = db.execute(
+        select(Airport).where(Airport.id == route_in.destination_id)
+    ).scalar_one_or_none()
     if not destination:
         raise LookupError(f"Destination airport with id {route_in.destination_id} not found")
 

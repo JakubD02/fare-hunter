@@ -22,7 +22,7 @@ form_data_dependency = Annotated[OAuth2PasswordRequestForm, Depends()]
 
 
 @router.post("/token", response_model=TokenPair)
-async def login(db: db_dependency, form_data: form_data_dependency):
+def login(db: db_dependency, form_data: form_data_dependency):
     user = authenticate_user(db=db, username=form_data.username, password=form_data.password)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong login or password!")
@@ -34,7 +34,7 @@ async def login(db: db_dependency, form_data: form_data_dependency):
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserRead)
-async def register(user_in: UserCreate, db: db_dependency):
+def register(user_in: UserCreate, db: db_dependency):
     user = create_user(db=db, user_in=user_in)
     if not user:
         raise HTTPException(
@@ -45,5 +45,5 @@ async def register(user_in: UserCreate, db: db_dependency):
 
 
 @router.get("/me", response_model=UserRead)
-async def read_me(current_user: CurrentUser):
+def read_me(current_user: CurrentUser):
     return current_user
