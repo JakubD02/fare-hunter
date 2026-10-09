@@ -35,7 +35,7 @@ def create_route(db: db_dependency, current_user: CurrentUser, route_in: RouteCr
 
 
 @router.get("/{route_id}", response_model=RouteRead)
-def get_route(db: db_dependency, current_user: CurrentUser, route_id: int):
+def get_route(db: db_dependency, current_user: CurrentUser, route_id: str):
     route = rs.get_route(db=db, user=current_user, route_id=route_id)
 
     if not route:
@@ -45,7 +45,7 @@ def get_route(db: db_dependency, current_user: CurrentUser, route_id: int):
 
 
 @router.patch("/{route_id}", response_model=RouteRead)
-def update_route(db: db_dependency, current_user: CurrentUser, route_in: RouteUpdate, route_id: int):
+def update_route(db: db_dependency, current_user: CurrentUser, route_in: RouteUpdate, route_id: str):
     route = rs.update_route(db=db, user=current_user, route_id=route_id, route_in=route_in)
 
     if not route:
@@ -55,7 +55,7 @@ def update_route(db: db_dependency, current_user: CurrentUser, route_in: RouteUp
 
 
 @router.delete("/{route_id}")
-def remove_route(db: db_dependency, current_user: CurrentUser, route_id: int) -> None:
+def remove_route(db: db_dependency, current_user: CurrentUser, route_id: str) -> None:
     deleted = rs.remove_route(db=db, user=current_user, route_id=route_id)
 
     if not deleted:

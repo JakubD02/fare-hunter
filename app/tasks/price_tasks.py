@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @celery_app.task(bind=True)
-def fetch_prices_for_route(self, route_id: int) -> int:
+def fetch_prices_for_route(self, route_id: str) -> int:
     db = SessionLocal()
     try:
         stmt = select(Route).where(Route.id == route_id)

@@ -8,7 +8,7 @@ from app.schemas.price_alert import PriceAlertCreate, PriceAlertUpdate
 from app.services import route_service
 
 
-def get_alert(db: Session, user: User, route_id: int) -> PriceAlert | None:
+def get_alert(db: Session, user: User, route_id: str) -> PriceAlert | None:
     query = (
         select(PriceAlert)
         .join(Route, PriceAlert.route_id == Route.id)
@@ -21,7 +21,7 @@ def get_alert(db: Session, user: User, route_id: int) -> PriceAlert | None:
     return db.execute(query).scalar_one_or_none()
 
 
-def upsert_alert(db: Session, user: User, route_id: int, alert_in: PriceAlertUpdate) -> PriceAlert | None:
+def upsert_alert(db: Session, user: User, route_id: str, alert_in: PriceAlertUpdate) -> PriceAlert | None:
     route = route_service.get_route(db=db, user=user, route_id=route_id)
     if not route:
         return None
@@ -47,7 +47,7 @@ def upsert_alert(db: Session, user: User, route_id: int, alert_in: PriceAlertUpd
     return alert
 
 
-def remove_alert(db: Session, user: User, route_id: int) -> bool:
+def remove_alert(db: Session, user: User, route_id: str) -> bool:
     alert = get_alert(db=db, user=user, route_id=route_id)
     if not alert:
         return False

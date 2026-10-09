@@ -10,13 +10,13 @@ from app.schemas.price_alert import PriceAlertRead, PriceAlertUpdate
 from app.services import alert_service
 from app.tasks.email_tasks import send_alert_confirmation_email_task
 
-router = APIRouter(tags=["alerts"])
+router = APIRouter(prefix="/routes", tags=["alerts"])
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
 
 @router.get("/{route_id}/alert", response_model=PriceAlertRead)
-def get_alert(db: db_dependency, current_user: CurrentUser, route_id: int):
+def get_alert(db: db_dependency, current_user: CurrentUser, route_id: str):
     alert = alert_service.get_alert(db=db, user=current_user, route_id=route_id)
 
     if not alert:
@@ -31,7 +31,7 @@ def get_alert(db: db_dependency, current_user: CurrentUser, route_id: int):
 def upsert_alert(
     db: db_dependency,
     current_user: CurrentUser,
-    route_id: int,
+    route_id: str,
     alert_in: PriceAlertUpdate,
 ):
     alert = alert_service.upsert_alert(db=db, user=current_user, route_id=route_id, alert_in=alert_in)
@@ -48,7 +48,7 @@ def upsert_alert(
 
 
 @router.delete("/{route_id}/alert", status_code=status.HTTP_204_NO_CONTENT)
-async def remove_alert(db: db_dependency, current_user: CurrentUser, route_id: int) -> None:
+def remove_alert(db: db_dependency, current_user: CurrentUser, route_id: str) -> None:
     deleted = alert_service.remove_alert(db=db, user=current_user, route_id=route_id)
 
     if not deleted:

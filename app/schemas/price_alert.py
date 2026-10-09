@@ -22,6 +22,7 @@ class PriceAlertBase(BaseModel):
 
 
 class PriceAlertCreate(PriceAlertBase):
+    route_id: str
     pass
 
 

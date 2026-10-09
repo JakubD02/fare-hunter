@@ -54,7 +54,7 @@ def send_alert_confirmation_email_task(self, user_id: str, alert_id: int):
 
 
 @celery_app.task(bind=True, max_retries=3)
-def send_price_drop_email_task(self, user_id: str, route_id: int, old_price: float, new_price: float):
+def send_price_drop_email_task(self, user_id: str, route_id: str, old_price: float, new_price: float):
     db = SessionLocal()
     try:
         user_id_uuid = UUID(user_id)

@@ -7,7 +7,7 @@ from scripts.data import AIRLINES_DATA, AIRPORTS_DATA
 
 
 def seed_airports(db: Session):
-    if db.execute(select(Airline)).scalars().first():
+    if db.execute(select(Airport)).scalars().first():
         print("Airports already seeded, skipping")
         return
 

@@ -13,7 +13,7 @@ def list_routes(db: Session, user: User) -> list[Route]:
     return list(db.execute(query).scalars().all())
 
 
-def get_route(db: Session, user: User, route_id: int) -> Route | None:
+def get_route(db: Session, user: User, route_id: str) -> Route | None:
     query = select(Route).where(Route.user_id == user.id, Route.id == route_id).order_by(Route.created_at.desc())
 
     return db.execute(query).scalar_one_or_none()
@@ -46,7 +46,7 @@ def create_route(db: Session, user: User, route_in: RouteCreate) -> Route:
     return route
 
 
-def update_route(db: Session, user: User, route_id: int, route_in: RouteUpdate) -> Route | None:
+def update_route(db: Session, user: User, route_id: str, route_in: RouteUpdate) -> Route | None:
     route = get_route(db, user=user, route_id=route_id)
     if not route:
         return None
@@ -61,7 +61,7 @@ def update_route(db: Session, user: User, route_id: int, route_in: RouteUpdate) 
     return route
 
 
-def remove_route(db: Session, user: User, route_id: int) -> bool:
+def remove_route(db: Session, user: User, route_id: str) -> bool:
     route = get_route(db, user=user, route_id=route_id)
     if not route:
         return False

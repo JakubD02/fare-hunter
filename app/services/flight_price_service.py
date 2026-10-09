@@ -103,7 +103,7 @@ class FlightPriceService:
             return None
 
 
-def get_history(db: Session, user: User, route_id: int) -> list[FlightPrice] | None:
+def get_history(db: Session, user: User, route_id: str) -> list[FlightPrice] | None:
     route = route_service.get_route(db=db, user=user, route_id=route_id)
     if not route:
         return None
@@ -113,7 +113,7 @@ def get_history(db: Session, user: User, route_id: int) -> list[FlightPrice] | N
     return list(db.execute(query).scalars().all())
 
 
-def get_stats(db: Session, user: User, route_id: int, days: int = 30) -> dict | None:
+def get_stats(db: Session, user: User, route_id: str, days: int = 30) -> dict | None:
     route = route_service.get_route(db=db, user=user, route_id=route_id)
     if not route:
         return None

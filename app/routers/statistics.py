@@ -16,7 +16,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 
 @router.get("/{route_id}/stats", response_model=FlightStats)
-def get_stats(db: db_dependency, current_user: CurrentUser, route_id: int) -> dict | None:
+def get_stats(db: db_dependency, current_user: CurrentUser, route_id: str) -> dict | None:
     stats = flight_price_service.get_stats(db=db, user=current_user, route_id=route_id)
 
     if stats is None:
@@ -28,7 +28,7 @@ def get_stats(db: db_dependency, current_user: CurrentUser, route_id: int) -> di
 
 
 @router.get("/{route_id}/history", response_model=list[FlightPriceRead])
-def get_history(db: db_dependency, current_user: CurrentUser, route_id: int) -> list[FlightPrice] | None:
+def get_history(db: db_dependency, current_user: CurrentUser, route_id: str) -> list[FlightPrice] | None:
     history = flight_price_service.get_history(db=db, user=current_user, route_id=route_id)
 
     if history is None:
