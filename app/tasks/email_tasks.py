@@ -25,16 +25,12 @@ def send_alert_confirmation_email_task(self, user_id: str, alert_id: int):
             logger.warning(f"User {user_id} not found")
             return
 
-        alert = db.execute(
-            select(PriceAlert).where(PriceAlert.id == alert_id)
-        ).scalar_one_or_none()
+        alert = db.execute(select(PriceAlert).where(PriceAlert.id == alert_id)).scalar_one_or_none()
         if not alert:
             logger.warning(f"Alert {alert_id} not found")
             return
 
-        route = db.execute(
-            select(Route).where(Route.id == alert.route_id)
-        ).scalar_one_or_none()
+        route = db.execute(select(Route).where(Route.id == alert.route_id)).scalar_one_or_none()
         if not route:
             logger.warning(f"Route {alert.route_id} not found")
             return
@@ -68,9 +64,7 @@ def send_price_drop_email_task(self, user_id: str, route_id: int, old_price: flo
             logger.warning(f"User {user_id} not found")
             return
 
-        route = db.execute(
-            select(Route).where(Route.id == route_id)
-        ).scalar_one_or_none()
+        route = db.execute(select(Route).where(Route.id == route_id)).scalar_one_or_none()
         if not route:
             logger.warning(f"Route {route_id} not found")
             return

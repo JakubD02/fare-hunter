@@ -22,7 +22,7 @@ class FlightPrice(Base):
     __tablename__ = "flight_prices"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid_string)
-    route_id: Mapped[str] = mapped_column(ForeignKey("routes.id"), nullable=False)
+    route_id: Mapped[str] = mapped_column(ForeignKey("routes.id", ondelete="CASCADE"), nullable=False, index=True)
     airline_id: Mapped[str] = mapped_column(ForeignKey("airlines.id"), nullable=False)
     price: Mapped[Decimal] = mapped_column(Numeric(PRICE_MAX_DIGITS, PRICE_DECIMAL_PLACES), nullable=False)
     currency: Mapped[Currency] = mapped_column(SqlEnum(Currency), default=Currency.PLN, nullable=False)
