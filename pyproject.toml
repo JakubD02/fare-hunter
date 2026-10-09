@@ -57,6 +57,11 @@ extend-exclude = ["alembic/versions"]
 select = ["E", "F", "W", "I"]
 ignore = ["E501"]
 
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

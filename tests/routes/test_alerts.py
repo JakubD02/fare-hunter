@@ -15,7 +15,6 @@ class TestGetAlert:
         assert data["currency"] == created_alert["currency"]
         assert data["is_active"] is True
 
-
     def test_get_alert_not_found(self, client, registered_user, created_route):
         """Alert doesn't exist for route"""
         response = client.get(
@@ -26,13 +25,11 @@ class TestGetAlert:
         assert response.status_code == 404
         assert response.json()["detail"] == "No alert configured for this route"
 
-
     def test_get_alert_unauthorized(self, client, created_route):
         """Unauthorized access without token"""
         response = client.get(f"/routes/{created_route['id']}/alert")
 
         assert response.status_code == 401
-
 
     def test_get_alert_for_other_user_route(self, client, registered_user, other_user_route):
         """Can't access alert for other user's route"""
@@ -42,6 +39,7 @@ class TestGetAlert:
         )
 
         assert response.status_code == 404
+
 
 class TestUpsertAlert:
     def test_create_alert_success(self, client, registered_user, created_route, alert_data):
@@ -116,6 +114,7 @@ class TestUpsertAlert:
         )
 
         assert response.status_code == 401
+
 
 class TestRemoveAlert:
     def test_remove_alert_success(self, client, registered_user, created_route, created_alert):

@@ -66,11 +66,12 @@ def user_data():
         "password": "test1234",
     }
 
+
 @pytest.fixture
 def other_user_route(client, other_registered_user, db):
     """Create a route for the other user"""
-    origin = db.execute(select(Airport).where(Airport.iata_code == "WAW") ).scalar_one_or_none()
-    destination = db.execute( select(Airport).where(Airport.iata_code == "JFK") ).scalar_one_or_none()
+    origin = db.execute(select(Airport).where(Airport.iata_code == "WAW")).scalar_one_or_none()
+    destination = db.execute(select(Airport).where(Airport.iata_code == "JFK")).scalar_one_or_none()
 
     if not origin or not destination:
         pytest.skip("Test airports not found in database")
@@ -135,9 +136,7 @@ def created_alert(client, registered_user, created_route, alert_data, db):
         json=alert_data,
         headers={"Authorization": f"Bearer {registered_user['token']}"},
     )
-    assert response.status_code == 200, (
-        f"Status: {response.status_code}, response: {response.text}"
-)
+    assert response.status_code == 200, f"Status: {response.status_code}, response: {response.text}"
     return response.json()
 
 
@@ -146,9 +145,8 @@ def created_route(client, registered_user, db):
     """Create a route for the registered user"""
     from app.models.airport import Airport
 
-
-    origin = db.execute(select(Airport).where(Airport.iata_code=="WAW")).scalar_one_or_none()
-    destination = db.execute(select(Airport).where(Airport.iata_code=="JFK")).scalar_one_or_none()
+    origin = db.execute(select(Airport).where(Airport.iata_code == "WAW")).scalar_one_or_none()
+    destination = db.execute(select(Airport).where(Airport.iata_code == "JFK")).scalar_one_or_none()
 
     if not origin or not destination:
         pytest.skip("Test airpots doesn't found in database")
