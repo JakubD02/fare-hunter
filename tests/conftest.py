@@ -67,6 +67,7 @@ def user_data():
     }
 
 
+
 @pytest.fixture
 def other_user_route(client, other_registered_user, db):
     """Create a route for the other user"""
@@ -165,3 +166,26 @@ def created_route(client, registered_user, db):
 
     assert response.status_code == 201
     return response.json()
+
+
+@pytest.fixture
+def route_data(db):
+    """Route creation data with actual airport IDs"""
+    origin = db.execute(select(Airport).where(Airport.iata_code == "WAW")).scalar_one_or_none()
+    destination = db.execute(select(Airport).where(Airport.iata_code == "JFK")).scalar_one_or_none()
+
+    if not origin or not destination:
+        pytest.skip("Test airports not found in database")
+
+    return {
+        "origin_id": origin.id,
+        "destination_id": destination.id,
+        "departure_date": "2026-12-25",
+    }
+
+@pytest.fixture
+def update_route_data():
+    """Route update data"""
+    return {
+        "destination_iata": "LHR",
+    }
