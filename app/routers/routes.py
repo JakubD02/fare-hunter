@@ -54,7 +54,8 @@ def update_route(db: db_dependency, current_user: CurrentUser, route_in: RouteUp
     return route
 
 
-@router.delete("/{route_id}")
+@router.delete("/{route_id}", status_code=status.HTTP_204_NO_CONTENT,
+)
 def remove_route(db: db_dependency, current_user: CurrentUser, route_id: str) -> None:
     deleted = rs.remove_route(db=db, user=current_user, route_id=route_id)
 

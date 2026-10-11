@@ -184,8 +184,11 @@ def route_data(db):
     }
 
 @pytest.fixture
-def update_route_data():
-    """Route update data"""
+def update_route_data(db):
+    airport = db.execute(
+        select(Airport).where(Airport.iata_code == "LHR")
+    ).scalar_one()
+
     return {
-        "destination_iata": "LHR",
+        "destination_id": airport.id,
     }

@@ -84,8 +84,8 @@ class TestCreateRoute:
         response = client.post(
             "/routes/",
             json={
-                "origin_iata": "WAW",
-                "destination_iata": "NYC",
+                "origin_id": "WAW",
+                "destination_id": "NYC",
                 "departure_date": "2020-01-01",
             },
             headers={"Authorization": f"Bearer {registered_user['token']}"},
@@ -100,7 +100,7 @@ class TestCreateRoute:
             "/routes/",
             json={
                 "origin_iata": "WAW",
-                "destination_iata": "NYC",
+                "destination_id": "NYC",
             },
             headers={"Authorization": f"Bearer {registered_user['token']}"},
         )
@@ -158,8 +158,19 @@ class TestUpdateRoute:
     """Test PATCH /routes/{route_id}"""
 
     def test_update_route_success(self, client, registered_user, created_route, update_route_data, db):
-        """Update route"""
-        pass
+        """Update route successfully"""
+        response = client.patch(
+            f"/routes/{created_route['id']}",
+            json=update_route_data,
+            headers={"Authorization": f"Bearer {registered_user['token']}"},
+        )
+
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["id"] == created_route["id"]
+        assert data["destination_id"] != created_route["destination_id"]
+
 
     def test_update_route_other_user(self, client, registered_user, other_user_route):
         """Can't update other user's route"""
@@ -172,7 +183,14 @@ class TestUpdateRoute:
         assert response.status_code == 404
 
     def test_update_route_invalid_data(self, client, registered_user, created_route):
-        pass
+        """Reject invalid route update data"""
+        response = client.patch(
+            f"/routes/{created_route['id']}",
+            json={"departure_date": "2020-01-01"},
+            headers={"Authorization": f"Bearer {registered_user['token']}"},
+        )
+
+        assert response.status_code == 422
 
     def test_update_route_unauthorized(self, client, created_route):
         """Unauthorized access"""
@@ -180,5 +198,49 @@ class TestUpdateRoute:
             f"/routes/{created_route['id']}",
             json={"destination_id": "LHR"},
         )
+
+        assert response.status_code == 401
+
+class TestRemoveRoute:
+    """Test DELETE /routes/{route_id}"""
+
+    def test_remove_route_success(self, client, registered_user, created_route):
+        """Delete route"""
+        response = client.delete(
+            f"/routes/{created_route['id']}",
+            headers={"Authorization": f"Bearer {registered_user['token']}"},
+        )
+
+        assert response.status_code == 204
+
+        # Verify route is deleted
+        get_response = client.get(
+            f"/routes/{created_route['id']}",
+            headers={"Authorization": f"Bearer {registered_user['token']}"},
+        )
+
+        assert get_response.status_code == 404
+
+    def test_remove_route_not_found(self, client, registered_user):
+        """Route doesn't exist"""
+        response = client.delete(
+            "/routes/99999999",
+            headers={"Authorization": f"Bearer {registered_user['token']}"},
+        )
+
+        assert response.status_code == 404
+
+    def test_remove_route_other_user(self, client, registered_user, other_user_route):
+        """Can't delete other user's route"""
+        response = client.delete(
+            f"/routes/{other_user_route['id']}",
+            headers={"Authorization": f"Bearer {registered_user['token']}"},
+        )
+
+        assert response.status_code == 404
+
+    def test_remove_route_unauthorized(self, client, created_route):
+        """Unauthorized access"""
+        response = client.delete(f"/routes/{created_route['id']}")
 
         assert response.status_code == 401
