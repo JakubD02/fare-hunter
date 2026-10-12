@@ -8,6 +8,13 @@ jobs:
   test:
     name: Run tests
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/fare_hunter
+      REDIS_URL: redis://localhost:6379/0
+      JWT_SECRET_KEY: test-secret-key
+      SENDGRID_API_KEY: test-key
+      SERPAPI_KEY: test-key
+      APP_URL: http://localhost:8000
     services:
       postgres:
         image: postgres:15
@@ -48,11 +55,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      - name: Run Ruff format check
+      - name: Run Ruff check
         run: uv run ruff check .
 
-      - name: Run Ruff formatter
-        run: uv run ruff format .
+      - name: Run Ruff formatter check
+        run: uv run ruff format --check .
 
       - name: Run mypy type check
         run: uv run mypy app
@@ -60,15 +67,12 @@ jobs:
       - name: Run Bandit security analysis
         run: uv run bandit -r app -f json -o bandit-report.json || true
 
+      - name: Run Alembic migrations
+        run: uv run alembic upgrade head
+
       - name: Run pytest
-        env:
-          DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/fare_hunter
-          REDIS_URL: redis://localhost:6379/0
-          JWT_SECRET_KEY: test-secret-key
-          SENDGRID_API_KEY: test-key
-          SERPAPI_KEY: test-key
-          APP_URL: http://localhost:8000
         run: uv run pytest
+
 
   audit-dependencies:
     name: Audit dependencies for vulnerabilities

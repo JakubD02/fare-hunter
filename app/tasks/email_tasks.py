@@ -1,5 +1,4 @@
 import logging
-from uuid import UUID
 
 from sqlalchemy import select
 
@@ -18,8 +17,7 @@ logger = logging.getLogger(__name__)
 def send_alert_confirmation_email_task(self, user_id: str, alert_id: int):
     db = SessionLocal()
     try:
-        user_id_uuid = UUID(user_id)
-        user = get_user_by_id(db, user_id_uuid)
+        user = get_user_by_id(db, user_id)
 
         if not user:
             logger.warning(f"User {user_id} not found")
@@ -57,8 +55,7 @@ def send_alert_confirmation_email_task(self, user_id: str, alert_id: int):
 def send_price_drop_email_task(self, user_id: str, route_id: str, old_price: float, new_price: float):
     db = SessionLocal()
     try:
-        user_id_uuid = UUID(user_id)
-        user = get_user_by_id(db, user_id_uuid)
+        user = get_user_by_id(db, user_id)
 
         if not user:
             logger.warning(f"User {user_id} not found")
