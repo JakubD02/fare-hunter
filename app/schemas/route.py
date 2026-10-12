@@ -14,6 +14,7 @@ def validate_optional_departure_date(val: date | None) -> date | None:
         validate_departure_date(val)
     return val
 
+
 def validate_return_date(
     val: date | None,
     info: ValidationInfo,
@@ -42,9 +43,7 @@ class RouteBase(BaseModel):
 
     @field_validator("return_date")
     @classmethod
-    def return_date_validation(
-        cls, val: date | None, info: ValidationInfo
-    ) -> date | None:
+    def return_date_validation(cls, val: date | None, info: ValidationInfo) -> date | None:
         return validate_return_date(val, info)
 
 
@@ -66,10 +65,9 @@ class RouteUpdate(BaseModel):
 
     @field_validator("return_date")
     @classmethod
-    def return_date_validation(
-        cls, val: date | None, info: ValidationInfo
-    ) -> date | None:
+    def return_date_validation(cls, val: date | None, info: ValidationInfo) -> date | None:
         return validate_return_date(val, info)
+
 
 class RouteRead(RouteBase):
     id: str

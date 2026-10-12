@@ -130,7 +130,6 @@ def get_stats(db: Session, user: User, route_id: str, days: int = 30) -> dict | 
         FlightPrice.fetched_at >= since,
     )
 
-
     currency = db.execute(
         select(FlightPrice.currency)
         .where(FlightPrice.route_id == route_id)

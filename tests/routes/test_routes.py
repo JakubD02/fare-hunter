@@ -1,7 +1,6 @@
-
-
 class TestListRoutes:
     """Test GET /routes/"""
+
     def test_list_routes_empty(self, client, registered_user):
         """List routes when none exist"""
         response = client.get(
@@ -44,6 +43,7 @@ class TestListRoutes:
         response = client.get("/routes/")
 
         assert response.status_code == 401
+
 
 class TestCreateRoute:
     """Test POST /routes/"""
@@ -91,7 +91,6 @@ class TestCreateRoute:
             headers={"Authorization": f"Bearer {registered_user['token']}"},
         )
 
-
         assert response.status_code == 422
 
     def test_create_route_missing_field(self, client, registered_user):
@@ -112,6 +111,7 @@ class TestCreateRoute:
         response = client.post("/routes/", json=route_data)
 
         assert response.status_code == 401
+
 
 class TestGetRoute:
     """Test GET /routes/{route_id}"""
@@ -171,7 +171,6 @@ class TestUpdateRoute:
         assert data["id"] == created_route["id"]
         assert data["destination_id"] != created_route["destination_id"]
 
-
     def test_update_route_other_user(self, client, registered_user, other_user_route):
         """Can't update other user's route"""
         response = client.patch(
@@ -200,6 +199,7 @@ class TestUpdateRoute:
         )
 
         assert response.status_code == 401
+
 
 class TestRemoveRoute:
     """Test DELETE /routes/{route_id}"""

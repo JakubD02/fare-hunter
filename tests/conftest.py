@@ -184,15 +184,15 @@ def route_data(db):
         "departure_date": "2026-12-25",
     }
 
+
 @pytest.fixture
 def update_route_data(db):
-    airport = db.execute(
-        select(Airport).where(Airport.iata_code == "LHR")
-    ).scalar_one()
+    airport = db.execute(select(Airport).where(Airport.iata_code == "LHR")).scalar_one()
 
     return {
         "destination_id": airport.id,
     }
+
 
 @pytest.fixture
 def price_history(client, registered_user, created_route, db):
@@ -218,6 +218,7 @@ def price_history(client, registered_user, created_route, db):
         )
     db.commit()
     return created_route
+
 
 @pytest.fixture
 def other_user_price_history(client, other_registered_user, other_user_route, db):

@@ -58,6 +58,7 @@ class TestGetStats:
 
         assert response.status_code == 401
 
+
 class TestGetHistory:
     """Test GET /routes/{route_id}/history"""
 
