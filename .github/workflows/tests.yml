@@ -9,7 +9,7 @@ jobs:
     name: Run tests
     runs-on: ubuntu-latest
     env:
-      DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/fare_hunter
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5433/fare_hunter
       REDIS_URL: redis://localhost:6379/0
       JWT_SECRET_KEY: test-secret-key
       SENDGRID_API_KEY: test-key
@@ -17,7 +17,7 @@ jobs:
       APP_URL: http://localhost:8000
     services:
       postgres:
-        image: postgres:15
+        image: postgres:16-alpine
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -28,7 +28,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432:5432
+          - 5433:5432
 
       redis:
         image: redis:7
@@ -69,6 +69,9 @@ jobs:
 
       - name: Run Alembic migrations
         run: uv run alembic upgrade head
+
+      - name: Check migrations match models
+        run: uv run alembic check
 
       - name: Run pytest
         run: uv run pytest

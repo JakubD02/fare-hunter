@@ -11,9 +11,9 @@ from app.core.security import (
     create_refresh_token,
 )
 from app.database import get_db
-from app.schemas.token import TokenPair
+from app.schemas.token import AccessToken, RefreshRequest, TokenPair
 from app.schemas.user import UserCreate, UserRead
-from app.services.auth_service import authenticate_user, create_user
+from app.services.auth_service import authenticate_user, create_user, refresh_access_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -47,3 +47,14 @@ def register(user_in: UserCreate, db: db_dependency):
 @router.get("/me", response_model=UserRead)
 def read_me(current_user: CurrentUser):
     return current_user
+
+
+@router.post("/refresh", response_model=AccessToken)
+def refresh(payload: RefreshRequest, db: db_dependency):
+    access_token = refresh_access_token(db=db, refresh_token=payload.refresh_token)
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
+    return AccessToken(access_token=access_token)

@@ -2,9 +2,13 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 RUN pip install uv
 
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
 
 RUN uv sync --frozen
 

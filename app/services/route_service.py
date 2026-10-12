@@ -33,8 +33,8 @@ def create_route(db: Session, user: User, route_in: RouteCreate) -> Route:
 
     route = Route(
         user_id=user.id,
-        origin_id=route_in.origin_id,
-        destination_id=route_in.destination_id,
+        origin_id=origin.id,
+        destination_id=destination.id,
         departure_date=route_in.departure_date,
         return_date=route_in.return_date,
         is_active=route_in.is_active,

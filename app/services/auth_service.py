@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from jwt import InvalidTokenError as JWTError
 from passlib.context import CryptContext
 from sqlalchemy import select
@@ -28,7 +26,7 @@ def get_user_by_email(db: Session, email: str) -> User | None:
     return db.execute(stmt).scalar_one_or_none()
 
 
-def get_user_by_id(db: Session, user_id: UUID) -> User | None:
+def get_user_by_id(db: Session, user_id: str) -> User | None:
     stmt = select(User).where(User.id == user_id)
     return db.execute(stmt).scalar_one_or_none()
 
@@ -65,19 +63,14 @@ def refresh_access_token(db: Session, refresh_token: str) -> str | None:
     except JWTError:
         return None
 
-    user_id_str = decoded_token.get("user_id")
-    if not user_id_str:
-        return None
-
-    try:
-        user_id = UUID(user_id_str)
-    except ValueError:
+    user_id = decoded_token.get("user_id")
+    if not user_id:
         return None
 
     user = get_user_by_id(db, user_id)
     if user is None or not user.is_active:
         return None
 
-    new_access_token = create_access_token(user.email, str(user.id))
+    new_access_token = create_access_token(email=user.email, user_id=str(user.id))
 
     return new_access_token

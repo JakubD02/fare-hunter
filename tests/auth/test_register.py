@@ -74,4 +74,4 @@ def test_register_with_additional_field(client):
         },
     )
 
-    assert response.status_code == 201  # 422
+    assert response.status_code == 201

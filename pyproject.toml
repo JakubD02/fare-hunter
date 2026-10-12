@@ -15,7 +15,7 @@ dependencies = [
     "fastapi>=0.109.1",
     "uvicorn[standard]>=0.27.0",
     "sqlalchemy>=2.0.25",
-    "psycopg2-binary==2.9.9",
+    "psycopg2-binary==2.9.10",
     "pydantic>=2.6.0",
     "email-validator>=2.1.0",
     "pydantic-settings>=2.1.0",
@@ -28,6 +28,7 @@ dependencies = [
     "python-multipart>=0.0.7",
     "requests>=2.32.4",
     "alembic>=1.13.1",
+    "bandit>=1.7.9",
 ]
 
 [dependency-groups]
@@ -43,6 +44,7 @@ dev = [
     "pip-audit>=2.10.1",
     "types-requests>=2.33.0.20261006",
     "types-python-jose>=3.5.0.20260408",
+    "bandit>=1.9.4",
 ]
 
 [tool.hatch.build.targets.wheel]

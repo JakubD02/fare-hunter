@@ -54,7 +54,7 @@ def upgrade() -> None:
     op.create_index(op.f("ix_users_email"), "users", ["email"], unique=True)
     op.create_table(
         "routes",
-        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("id", sa.String(length=36), nullable=False),
         sa.Column("user_id", sa.String(length=36), nullable=False),
         sa.Column("origin_id", sa.String(length=36), nullable=False),
         sa.Column("destination_id", sa.String(length=36), nullable=False),
@@ -79,7 +79,7 @@ def upgrade() -> None:
     op.create_table(
         "flight_prices",
         sa.Column("id", sa.String(length=36), nullable=False),
-        sa.Column("route_id", sa.Integer(), nullable=False),
+        sa.Column("route_id", sa.String(length=36), nullable=False),
         sa.Column("airline_id", sa.String(length=36), nullable=False),
         sa.Column("price", sa.Numeric(precision=10, scale=2), nullable=False),
         sa.Column("currency", sa.Enum("PLN", "EUR", "USD", "GBP", name="currency"), nullable=False),
@@ -100,7 +100,7 @@ def upgrade() -> None:
     op.create_table(
         "price_alerts",
         sa.Column("id", sa.String(length=36), nullable=False),
-        sa.Column("route_id", sa.Integer(), nullable=False),
+        sa.Column("route_id", sa.String(length=36), nullable=False),
         sa.Column("threshold_price", sa.Numeric(precision=10, scale=2), nullable=False),
         sa.Column("currency", sa.Enum("PLN", "EUR", "USD", "GBP", name="currency"), nullable=False),
         sa.Column("is_active", sa.Boolean(), nullable=False),
