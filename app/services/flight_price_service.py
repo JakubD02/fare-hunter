@@ -130,12 +130,21 @@ def get_stats(db: Session, user: User, route_id: str, days: int = 30) -> dict | 
         FlightPrice.fetched_at >= since,
     )
 
+
+    currency = db.execute(
+        select(FlightPrice.currency)
+        .where(FlightPrice.route_id == route_id)
+        .order_by(FlightPrice.fetched_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+
     result = db.execute(query).one()
 
     return {
         "route_id": route_id,
         "period_days": days,
         "sample_count": result.sample_count,
+        "currency": currency,
         "min_price": result.min_price,
         "max_price": result.max_price,
         "avg_price": result.avg_price,

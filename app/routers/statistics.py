@@ -18,7 +18,6 @@ db_dependency = Annotated[Session, Depends(get_db)]
 @router.get("/{route_id}/stats", response_model=FlightStats)
 def get_stats(db: db_dependency, current_user: CurrentUser, route_id: str) -> dict | None:
     stats = flight_price_service.get_stats(db=db, user=current_user, route_id=route_id)
-
     if stats is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -30,10 +29,10 @@ def get_stats(db: db_dependency, current_user: CurrentUser, route_id: str) -> di
 @router.get("/{route_id}/history", response_model=list[FlightPriceRead])
 def get_history(db: db_dependency, current_user: CurrentUser, route_id: str) -> list[FlightPrice] | None:
     history = flight_price_service.get_history(db=db, user=current_user, route_id=route_id)
-
     if history is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Route not found",
         )
+
     return history

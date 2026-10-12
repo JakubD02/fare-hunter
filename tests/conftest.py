@@ -1,3 +1,5 @@
+from datetime import date, datetime, timezone
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, select
@@ -65,7 +67,6 @@ def user_data():
         "email": "test@gmail.com",
         "password": "test1234",
     }
-
 
 
 @pytest.fixture
@@ -192,3 +193,53 @@ def update_route_data(db):
     return {
         "destination_id": airport.id,
     }
+
+@pytest.fixture
+def price_history(client, registered_user, created_route, db):
+    """Create price history for route"""
+    from app.models.airline import Airline
+    from app.models.flight_price import FlightPrice
+
+    airline = db.execute(select(Airline)).scalars().first()
+    assert airline is not None, "No airlines seeded in test DB"
+
+    departure = date.fromisoformat(created_route["departure_date"])
+
+    for i in range(5):
+        db.add(
+            FlightPrice(
+                route_id=created_route["id"],
+                airline_id=airline.id,
+                price=100.0 + i * 10,
+                currency="EUR",
+                departure_date=departure,
+                fetched_at=datetime.now(timezone.utc),
+            )
+        )
+    db.commit()
+    return created_route
+
+@pytest.fixture
+def other_user_price_history(client, other_registered_user, other_user_route, db):
+    """Create price history for other user's route"""
+    from app.models.airline import Airline
+    from app.models.flight_price import FlightPrice
+
+    airline = db.execute(select(Airline)).scalars().first()
+    assert airline is not None, "No airlines seeded in test DB"
+
+    departure = date.fromisoformat(other_user_route["departure_date"])
+
+    for i in range(5):
+        db.add(
+            FlightPrice(
+                route_id=other_user_route["id"],
+                airline_id=airline.id,
+                price=100.0 + i * 10,
+                currency="EUR",
+                departure_date=departure,
+                fetched_at=datetime.now(timezone.utc),
+            )
+        )
+    db.commit()
+    return other_user_route

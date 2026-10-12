@@ -22,6 +22,7 @@ class FlightStats(BaseModel):
     route_id: str
     period_days: int
     sample_count: int
+    currency: Currency | None
     min_price: Decimal | None
     max_price: Decimal | None
     avg_price: Decimal | None
