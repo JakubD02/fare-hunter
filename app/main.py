@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 
-from app.routers import alerts, auth, reference, routes, statistics
+from app.routers import alerts, auth, currency, reference, routes, statistics
 
 app = FastAPI(
     title="Fare hunter - flight tracker API",
-    description="lorem ipsum",
+    description="Backend API for automated flight price tracking and alerts.",
     version="0.1.0",
 )
 
@@ -14,6 +14,7 @@ app.include_router(reference.router)
 app.include_router(routes.router)
 app.include_router(statistics.router)
 app.include_router(alerts.router)
+app.include_router(currency.router)
 
 
 @app.get("/", tags=["default"])

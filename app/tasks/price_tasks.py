@@ -1,14 +1,17 @@
 import logging
 from decimal import Decimal
 
+import httpx
 from sqlalchemy import select
 
 from app.celery_app import celery_app
 from app.core.exceptions import TaskExecutionError
 from app.database import SessionLocal
+from app.enums.currency import Currency
 from app.models.flight_price import FlightPrice
 from app.models.price_alert import PriceAlert
 from app.models.route import Route
+from app.services import currency as currency_service
 from app.services.flight_price_service import flight_price_service
 from app.tasks.email_tasks import send_price_drop_email_task
 
@@ -34,13 +37,19 @@ def fetch_prices_for_route(self, route_id: str) -> int:
             logger.warning(f"No price found for route {route_id}")
             return 0
 
+        try:
+            flight_currency = Currency(price_data["currency"])
+        except ValueError:
+            logger.error(f"Unsupported currency {price_data['currency']} for route {route_id}")
+            return 0
+
         price = Decimal(str(price_data["price"]))
 
         flight_price = FlightPrice(
             route_id=route.id,
             price=price,
+            currency=flight_currency,
             airline_id=price_data["airline"],
-            currency=price_data["currency"],
         )
         db.add(flight_price)
         db.commit()
@@ -48,12 +57,14 @@ def fetch_prices_for_route(self, route_id: str) -> int:
 
         alert_stmt = select(PriceAlert).where((PriceAlert.route_id == route_id) & (PriceAlert.is_active))
         alert = db.execute(alert_stmt).scalar_one_or_none()
-
         if not alert:
             return 1
 
-        if price < alert.threshold_price:
-            logger.warning(f"Price drop! ${price_data['price']} < ${alert.threshold_price}")
+        alert_currency = Currency(alert.currency)
+        new_price = currency_service.convert(price, flight_currency, alert_currency)
+
+        if new_price < alert.threshold_price:
+            logger.warning(f"Price drop! {new_price} {alert_currency} < {alert.threshold_price} {alert_currency}")
 
             prev_price_stmt = (
                 select(FlightPrice)
@@ -61,21 +72,20 @@ def fetch_prices_for_route(self, route_id: str) -> int:
                 .order_by(FlightPrice.id.desc())
                 .limit(1)
             )
-
             prev = db.execute(prev_price_stmt).scalar_one_or_none()
-            old_price = prev.price if prev else price
+            old_price = currency_service.convert(prev.price, prev.currency, alert_currency) if prev else new_price
 
             send_price_drop_email_task.delay(
                 user_id=str(route.user_id),
                 route_id=route.id,
-                old_price=old_price,
-                new_price=price,
+                old_price=float(old_price),
+                new_price=float(new_price),
             )
 
         return 1
 
-    except TaskExecutionError as e:
-        logger.error(f"Network error: {e}")
+    except (TaskExecutionError, httpx.HTTPError) as e:
+        logger.error(f"Network or API error: {e}")
         self.retry(exc=e, countdown=300)
         return 0
 
@@ -99,7 +109,7 @@ def fetch_all_prices_periodic() -> int:
 
         count = 0
         for route in routes:
-            fetch_prices_for_route.delay(route_id=route.id)
+            fetch_prices_for_route.delay(route_id=str(route.id))
             count += 1
 
         logger.info(f"Queued {count} price fetch tasks")
