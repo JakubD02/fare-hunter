@@ -1,5 +1,6 @@
 import logging
 
+from pydantic import EmailStr
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Content, Mail, To
 
@@ -15,7 +16,7 @@ class EmailService:
 
     def send_email(
         self,
-        to_email: str,
+        to_email: EmailStr,
         subject: str,
         body: str,
         html_body: str | None = None,

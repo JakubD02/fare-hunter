@@ -2,6 +2,7 @@ import os
 from typing import ClassVar
 
 from celery.schedules import crontab
+from pydantic import EmailStr, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,7 +25,7 @@ class Settings(BaseSettings):
 
     # sendgrid
     SENDGRID_API_KEY: str
-    FROM_EMAIL: str = "noreply@fareh\u200bunter.app"
+    FROM_EMAIL: EmailStr = Field(default="noreply@farehunter.app", validate_default=True)
     APP_URL: str = "http://localhost:8000"
 
     # app

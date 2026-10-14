@@ -5,6 +5,7 @@ import jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError as JWTError
+from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette import status
@@ -50,7 +51,7 @@ def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-def create_access_token(email: str, user_id: str) -> str:
+def create_access_token(email: EmailStr, user_id: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": email,
