@@ -8,7 +8,7 @@ ENV PATH="/app/.venv/bin:$PATH" \
 
 RUN pip install uv
 
-COPY pyproject.toml uv.lock README.md ./
+COPY pyproject.toml uv.lock ./
 
 RUN uv sync --frozen
 
@@ -20,4 +20,4 @@ USER appuser
 
 EXPOSE 8000
 
-CMD [".venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

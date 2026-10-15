@@ -1,19 +1,53 @@
+# Git
 .git
 .gitignore
+.gitattributes
+
+# Environment
 .env
 .env.local
+.env.*.local
+
+# Python
 __pycache__
 *.pyc
-.pytest_cache
-.mypy_cache
-venv/
+*.pyo
+*.pyd
+.Python
 .venv/
-node_modules/
-.DS_Store
-*.log
-tests/
-.github/
+venv/
+ENV/
+env/
 .mypy_cache/
+.pytest_cache/
+.ruff_cache/
 *.egg-info/
 dist/
 build/
+*.egg
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Testing
+tests/
+.coverage
+htmlcov/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
+
+# Docker
+docker-compose.override.yml
+Dockerfile.dev

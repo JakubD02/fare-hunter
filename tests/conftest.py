@@ -11,6 +11,7 @@ from app.main import app
 from app.models import Base
 from app.models.airline import Airline
 from app.models.airport import Airport
+from app.models.route import Route
 from app.tasks.email_tasks import send_alert_confirmation_email_task, send_price_drop_email_task
 from app.tasks.price_tasks import fetch_prices_for_route
 from scripts.data import AIRLINES_DATA, AIRPORTS_DATA
@@ -121,6 +122,17 @@ def other_registered_user(client, other_user_data):
     )
     other_user_data["token"] = token_response.json()["access_token"]
     return other_user_data
+
+
+@pytest.fixture
+def created_route_model(db, created_route):
+    return db.get(Route, created_route["id"])
+
+
+@pytest.fixture
+def airline(db):
+    """Airline used by the tests. Assumes IATA code 'LO' exists in AIRLINES_DATA."""
+    return db.execute(select(Airline).where(Airline.iata_code == "LO")).scalar_one()
 
 
 @pytest.fixture

@@ -7,7 +7,6 @@ name = "fare-hunter"
 version = "0.1.0"
 description = "Flight price tracker with real-time alerts and email notifications"
 
-readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.12"
 

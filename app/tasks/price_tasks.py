@@ -3,28 +3,20 @@ from decimal import Decimal
 
 import httpx
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from app.celery_app import celery_app
 from app.core.exceptions import TaskExecutionError
 from app.database import SessionLocal
 from app.enums.currency import Currency
-from app.models.airline import Airline
 from app.models.flight_price import FlightPrice
 from app.models.price_alert import PriceAlert
 from app.models.route import Route
 from app.services import currency as currency_service
+from app.services import reference_service
 from app.services.flight_price_service import flight_price_service
 from app.tasks.email_tasks import send_price_drop_email_task
 
 logger = logging.getLogger(__name__)
-
-
-def _find_airline_id(db: Session, airline_name: str | None) -> str | None:
-    if not airline_name:
-        return None
-    stmt = select(Airline.id).where((Airline.iata_code == airline_name) | (Airline.name == airline_name))
-    return db.execute(stmt).scalar_one_or_none()
 
 
 @celery_app.task(bind=True)
@@ -53,8 +45,9 @@ def fetch_prices_for_route(self, route_id: str) -> int:
             return 0
 
         price = Decimal(str(price_data["price"]))
+        airline_name = price_data.get("airline")
+        airline_id = reference_service.find_airline_id(db, airline_name)
 
-        airline_id = _find_airline_id(db, price_data.get("airline"))
         if airline_id is None:
             logger.warning(f"Unknown airline {price_data.get('airline')!r} for route {route_id}")
             return 0
