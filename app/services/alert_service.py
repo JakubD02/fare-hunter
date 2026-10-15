@@ -29,17 +29,17 @@ def upsert_alert(db: Session, user: User, route_id: str, alert_in: PriceAlertUpd
     alert = get_alert(db=db, user=user, route_id=route_id)
     data = alert_in.model_dump(exclude_unset=True)
 
+    if "threshold_price" in data and data["threshold_price"] is None:
+        raise ValueError("threshold_price cannot be null")
+
     if alert:
-        # Update existing alert
         for field, value in data.items():
             setattr(alert, field, value)
     else:
-        # Create new alert
-        try:
-            create_in = PriceAlertCreate(route_id=route_id, **data)
-            alert = PriceAlert(**create_in.model_dump())
-        except ValueError:
-            return None
+        if "threshold_price" not in data:
+            raise ValueError("threshold_price is required to create an alert")
+        create_in = PriceAlertCreate(route_id=route_id, **data)
+        alert = PriceAlert(**create_in.model_dump())
 
     db.add(alert)
     db.commit()

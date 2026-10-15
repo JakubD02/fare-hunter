@@ -34,10 +34,13 @@ def upsert_alert(
     route_id: str,
     alert_in: PriceAlertUpdate,
 ):
-    alert = alert_service.upsert_alert(db=db, user=current_user, route_id=route_id, alert_in=alert_in)
+    try:
+        alert = alert_service.upsert_alert(db=db, user=current_user, route_id=route_id, alert_in=alert_in)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e)) from e
 
     if not alert:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")
 
     send_alert_confirmation_email_task.delay(
         user_id=str(current_user.id),

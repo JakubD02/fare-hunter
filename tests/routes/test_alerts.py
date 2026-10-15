@@ -85,6 +85,7 @@ class TestUpsertAlert:
         )
 
         assert response.status_code == 404
+        assert response.json()["detail"] == "Route not found"
 
     def test_upsert_alert_other_user_route(self, client, registered_user, other_user_route, alert_data):
         """Can't create alert for other user's route"""
@@ -114,6 +115,33 @@ class TestUpsertAlert:
         )
 
         assert response.status_code == 401
+
+    def test_create_alert_without_threshold_returns_422(self, client, registered_user, created_route):
+        """Creating a new alert requires threshold_price"""
+        response = client.put(
+            f"/routes/{created_route['id']}/alert",
+            json={"is_active": True},
+            headers={"Authorization": f"Bearer {registered_user['token']}"},
+        )
+
+        assert response.status_code == 422
+        assert "threshold_price" in response.json()["detail"]
+
+        get_response = client.get(
+            f"/routes/{created_route['id']}/alert",
+            headers={"Authorization": f"Bearer {registered_user['token']}"},
+        )
+        assert get_response.status_code == 404
+
+    def test_update_alert_null_threshold_returns_422(self, client, registered_user, created_route, created_alert):
+        """Explicit null threshold_price is rejected on update"""
+        response = client.put(
+            f"/routes/{created_route['id']}/alert",
+            json={"threshold_price": None},
+            headers={"Authorization": f"Bearer {registered_user['token']}"},
+        )
+
+        assert response.status_code == 422
 
 
 class TestRemoveAlert:
