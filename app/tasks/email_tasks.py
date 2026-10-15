@@ -44,6 +44,7 @@ def send_alert_confirmation_email_task(self, user_id: str, alert_id: int):
 
     except EmailSendError as e:
         logger.error(f"Error sending alert confirmation email: {e}")
+        raise self.retry(exc=e, countdown=300)
     except (ValueError, LookupError) as e:
         logger.error(f"Invalid data in alert confirmation email task: {e}")
 

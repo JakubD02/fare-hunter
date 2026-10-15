@@ -63,9 +63,9 @@ def fetch_prices_for_route(self, route_id: str) -> int:
             route_id=route.id,
             price=price,
             currency=flight_currency,
-            airline_id=price_data["airline"],
+            airline_id=airline_id,
             departure_date=route.departure_date,
-            eturn_date=route.return_date,
+            return_date=route.return_date,
         )
         db.add(flight_price)
         db.commit()
@@ -85,7 +85,7 @@ def fetch_prices_for_route(self, route_id: str) -> int:
             prev_price_stmt = (
                 select(FlightPrice)
                 .where((FlightPrice.route_id == route_id) & (FlightPrice.id != flight_price.id))
-                .order_by(FlightPrice.id.desc())
+                .order_by(FlightPrice.fetched_at.desc())
                 .limit(1)
             )
             prev = db.execute(prev_price_stmt).scalar_one_or_none()

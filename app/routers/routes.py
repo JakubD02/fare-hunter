@@ -15,7 +15,7 @@ router = APIRouter(prefix="/routes", tags=["routes"])
 db_dependency = Annotated[Session, Depends(get_db)]
 
 
-@router.get("/")
+@router.get("/", response_model=list[RouteRead])
 def list_routes(db: db_dependency, current_user: CurrentUser):
     return rs.list_routes(db, user=current_user)
 
