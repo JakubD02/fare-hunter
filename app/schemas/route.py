@@ -43,7 +43,7 @@ class RouteCreate(RouteFields):
         return value
 
 
-class RouteUpdate(RouteFields):
+class RouteUpdate(BaseModel):
     origin_id: str | None = None
     destination_id: str | None = None
     departure_date: date | None = None
