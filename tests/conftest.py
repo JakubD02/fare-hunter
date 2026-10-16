@@ -14,7 +14,7 @@ from app.models.airport import Airport
 from app.models.route import Route
 from app.tasks.email_tasks import send_alert_confirmation_email_task, send_price_drop_email_task
 from app.tasks.price_tasks import fetch_prices_for_route
-from scripts.data import AIRLINES_DATA, AIRPORTS_DATA
+from data import AIRLINES_DATA, AIRPORTS_DATA
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
