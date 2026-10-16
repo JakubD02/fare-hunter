@@ -5,7 +5,6 @@ from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import (
     ForeignKey,
     Numeric,
-    String,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -15,13 +14,12 @@ from app.constants.price import (
     PRICE_MAX_DIGITS,
 )
 from app.enums.currency import Currency
-from app.models.base import Base, generate_uuid_string
+from app.models.base import IdModel
 
 
-class FlightPrice(Base):
+class FlightPrice(IdModel):
     __tablename__ = "flight_prices"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid_string)
     route_id: Mapped[str] = mapped_column(ForeignKey("routes.id", ondelete="CASCADE"), nullable=False, index=True)
     airline_id: Mapped[str] = mapped_column(ForeignKey("airlines.id"), nullable=False)
     price: Mapped[Decimal] = mapped_column(Numeric(PRICE_MAX_DIGITS, PRICE_DECIMAL_PLACES), nullable=False)

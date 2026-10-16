@@ -1,6 +1,7 @@
 from jwt import InvalidTokenError as JWTError
 from passlib.context import CryptContext
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.security import (
@@ -35,16 +36,15 @@ def authenticate_user(db: Session, username: str, password: str) -> User | None:
     user = get_user_by_email(db, email=username)
     if not user:
         return None
+    if not user.is_active:
+        return None
+
     if not verify_password(password, user.password_hash):
         return None
     return user
 
 
 def create_user(db: Session, user_in: UserCreate) -> User | None:
-    user = get_user_by_email(db, email=user_in.email)
-    if user:
-        return None
-
     user = User(
         first_name=user_in.first_name,
         email=user_in.email,
@@ -52,7 +52,13 @@ def create_user(db: Session, user_in: UserCreate) -> User | None:
     )
 
     db.add(user)
-    db.commit()
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return None
+
     db.refresh(user)
     return user
 

@@ -9,49 +9,41 @@ def validate_departure_date(val: date) -> date:
     return val
 
 
-def validate_optional_departure_date(val: date | None) -> date | None:
-    if val is not None:
-        validate_departure_date(val)
-    return val
+def validate_return_date(value: date | None, departure: date | None) -> date | None:
+    if value is not None and departure is not None and value < departure:
+        raise ValueError("Return date must not be before departure date")
+    return value
 
 
-def validate_return_date(
-    val: date | None,
-    info: ValidationInfo,
-) -> date | None:
-    if val is None:
-        return val
-
-    departure_date = info.data.get("departure_date")
-    if departure_date is not None and val < departure_date:
-        raise ValueError("Return_date must not be before departure_date")
-
-    return val
-
-
-class RouteBase(BaseModel):
+class RouteFields(BaseModel):
     origin_id: str
     destination_id: str
     departure_date: date
     return_date: date | None = None
     is_active: bool = True
 
+
+class RouteCreate(RouteFields):
     @field_validator("departure_date")
     @classmethod
-    def departure_date_must_be_in_future(cls, val: date) -> date:
-        return validate_departure_date(val)
+    def departure_date_must_be_in_future(cls, value: date) -> date:
+        return validate_departure_date(value)
 
     @field_validator("return_date")
     @classmethod
-    def return_date_validation(cls, val: date | None, info: ValidationInfo) -> date | None:
-        return validate_return_date(val, info)
+    def return_date_must_follow_departure(cls, value: date | None, info: ValidationInfo) -> date | None:
+        return validate_return_date(value, info.data.get("departure_date"))
+
+    @field_validator("destination_id")
+    @classmethod
+    def destination_must_differ_from_origin(cls, value: str, info: ValidationInfo) -> str:
+        origin = info.data.get("origin_id")
+        if origin is not None and value == origin:
+            raise ValueError("Origin and destination must be different")
+        return value
 
 
-class RouteCreate(RouteBase):
-    pass
-
-
-class RouteUpdate(BaseModel):
+class RouteUpdate(RouteFields):
     origin_id: str | None = None
     destination_id: str | None = None
     departure_date: date | None = None
@@ -60,16 +52,13 @@ class RouteUpdate(BaseModel):
 
     @field_validator("departure_date")
     @classmethod
-    def departure_date_must_be_in_future(cls, val: date | None) -> date | None:
-        return validate_optional_departure_date(val)
-
-    @field_validator("return_date")
-    @classmethod
-    def return_date_validation(cls, val: date | None, info: ValidationInfo) -> date | None:
-        return validate_return_date(val, info)
+    def departure_date_must_be_in_future(cls, value: date | None) -> date | None:
+        if value is None:
+            raise ValueError("Departure date cannot be null")
+        return validate_departure_date(value)
 
 
-class RouteRead(RouteBase):
+class RouteRead(RouteFields):
     id: str
     user_id: str
     created_at: datetime

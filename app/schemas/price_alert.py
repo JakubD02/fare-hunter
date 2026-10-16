@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.constants.price import (
     PRICE_DECIMAL_PLACES,
@@ -35,6 +35,15 @@ class PriceAlertUpdate(BaseModel):
     )
     currency: Currency | None = None
     is_active: bool | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_null_values(cls, data):
+        if isinstance(data, dict):
+            for field, value in data.items():
+                if value is None:
+                    raise ValueError(f"{field} cannot be null")
+        return data
 
 
 class PriceAlertRead(PriceAlertBase):

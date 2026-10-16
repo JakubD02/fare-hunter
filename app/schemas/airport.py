@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.constants.airport import (
     CITY_MAX_LENGTH,
@@ -21,8 +21,13 @@ class AirportBase(BaseModel):
 
     @field_validator("iata_code", "country_code")
     @classmethod
-    def uppercase_codes(cls, v: str) -> str:
-        return v.upper()
+    def normalize_codes(cls, v: str) -> str:
+        return v.strip().upper()
+
+    @field_validator("name", "city", "country")
+    @classmethod
+    def strip_text(cls, value: str) -> str:
+        return value.strip()
 
 
 class AirportCreate(AirportBase):
@@ -38,8 +43,22 @@ class AirportUpdate(BaseModel):
 
     @field_validator("iata_code", "country_code")
     @classmethod
-    def uppercase_codes(cls, v: str) -> str | None:
-        return v.upper()
+    def normalize_codes(cls, v: str | None) -> str | None:
+        return v.strip().upper() if v is not None else None
+
+    @field_validator("name", "city", "country")
+    @classmethod
+    def strip_text(cls, value: str | None) -> str | None:
+        return value.strip() if value is not None else None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_null_values(cls, data):
+        if isinstance(data, dict):
+            for field, value in data.items():
+                if value is None:
+                    raise ValueError(f"{field} cannot be null")
+        return data
 
 
 class AirportRead(AirportBase):

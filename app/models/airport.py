@@ -8,15 +8,14 @@ from app.constants.airport import (
     IATA_CODE_LENGTH,
     NAME_MAX_LENGTH,
 )
-from app.models.base import Base, generate_uuid_string
+from app.models.base import IdModel
 
 
-class Airport(Base):
+class Airport(IdModel):
     __tablename__ = "airports"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid_string)
     iata_code: Mapped[str] = mapped_column(String(IATA_CODE_LENGTH), unique=True, nullable=False, index=True)
-    name: Mapped[str] = mapped_column(String(NAME_MAX_LENGTH), nullable=False)
+    name: Mapped[str] = mapped_column(String(NAME_MAX_LENGTH), nullable=False, unique=True)
     city: Mapped[str] = mapped_column(String(CITY_MAX_LENGTH), nullable=False)
     country: Mapped[str] = mapped_column(String(COUNTRY_MAX_LENGTH), nullable=False)
     country_code: Mapped[str] = mapped_column(String(COUNTRY_CODE_LENGTH), nullable=False, index=True)

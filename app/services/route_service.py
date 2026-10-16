@@ -65,6 +65,12 @@ def update_route(db: Session, user: User, route_id: str, route_in: RouteUpdate) 
 
     data = route_in.model_dump(exclude_unset=True)
 
+    departure_date = data.get("departure_date", route.departure_date)
+    return_date = data.get("return_date", route.return_date)
+
+    if return_date is not None and return_date < departure_date:
+        raise ValueError("Return date must not be before departure date")
+
     origin_id = data.get("origin_id", route.origin_id)
     destination_id = data.get("destination_id", route.destination_id)
 
@@ -75,6 +81,11 @@ def update_route(db: Session, user: User, route_id: str, route_in: RouteUpdate) 
 
     for field, value in data.items():
         setattr(route, field, value)
+
+    if "origin_id" in data:
+        route.origin_id = origin.id
+    if "destination_id" in data:
+        route.destination_id = destination.id
 
     db.commit()
     db.refresh(route)

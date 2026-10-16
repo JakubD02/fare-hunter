@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.constants.price import PRICE_DECIMAL_PLACES, PRICE_MAX_DIGITS, PRICE_MIN_VALUE
 from app.enums.currency import Currency
@@ -17,11 +17,17 @@ class FlightPriceBase(BaseModel):
     departure_date: date
     return_date: date | None = None
 
+    @model_validator(mode="after")
+    def validate_dates(self):
+        if self.return_date is not None and self.return_date < self.departure_date:
+            raise ValueError("return_date cannot precede departure_date")
+        return self
+
 
 class FlightStats(BaseModel):
     route_id: str
-    period_days: int
-    sample_count: int
+    period_days: int = Field(gt=0)
+    sample_count: int = Field(ge=0)
     currency: Currency | None
     min_price: Decimal | None
     max_price: Decimal | None

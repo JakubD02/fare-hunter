@@ -1,5 +1,5 @@
 # app/schemas/airline.py
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.constants.airline import (
     IATA_CODE_LENGTH,
@@ -14,8 +14,13 @@ class AirlineBase(BaseModel):
 
     @field_validator("iata_code")
     @classmethod
-    def uppercase_code(cls, v: str) -> str:
-        return v.upper()
+    def normalize_iata_code(cls, v: str) -> str:
+        return v.strip().upper()
+
+    @field_validator("name")
+    @classmethod
+    def strip_text(cls, value: str) -> str:
+        return value.strip()
 
 
 class AirlineCreate(AirlineBase):
@@ -29,7 +34,21 @@ class AirlineUpdate(BaseModel):
     @field_validator("iata_code")
     @classmethod
     def uppercase_code(cls, v: str | None) -> str | None:
-        return v.upper() if v else v
+        return v.strip().upper() if v is not None else None
+
+    @field_validator("name")
+    @classmethod
+    def strip_text(cls, value: str | None) -> str | None:
+        return value.strip() if value is not None else None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_null_values(cls, data):
+        if isinstance(data, dict):
+            for field, value in data.items():
+                if value is None:
+                    raise ValueError(f"{field} cannot be null")
+        return data
 
 
 class AirlineRead(AirlineBase):

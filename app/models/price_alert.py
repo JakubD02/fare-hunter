@@ -5,7 +5,6 @@ from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import (
     ForeignKey,
     Numeric,
-    String,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -14,13 +13,12 @@ from app.constants.price import (
     PRICE_MAX_DIGITS,
 )
 from app.enums.currency import Currency
-from app.models.base import Base, generate_uuid_string
+from app.models.base import BaseModel
 
 
-class PriceAlert(Base):
+class PriceAlert(BaseModel):
     __tablename__ = "price_alerts"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid_string)
     route_id: Mapped[str] = mapped_column(ForeignKey("routes.id", ondelete="CASCADE"), unique=True, nullable=False)
     threshold_price: Mapped[Decimal] = mapped_column(Numeric(PRICE_MAX_DIGITS, PRICE_DECIMAL_PLACES), nullable=False)
     currency: Mapped[Currency] = mapped_column(SqlEnum(Currency), default=Currency.PLN, nullable=False)
