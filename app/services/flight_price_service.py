@@ -1,153 +1,69 @@
-import logging
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
-import requests
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
-
-from app.core.config import settings
-from app.core.exceptions import TaskExecutionError
 from app.models.flight_price import FlightPrice
 from app.models.user import User
-from app.services import route_service
-
-logger = logging.getLogger(__name__)
+from app.repositories.airline_repository import AirlineRepository
+from app.repositories.flight_price_repository import FlightPriceRepository
+from app.services.flight_price_provider import FlightOffer, FlightPriceProvider
+from app.services.route_service import RouteService
 
 
 class FlightPriceService:
-    def __init__(self):
-        self.api_key = settings.SERPAPI_KEY
-        self.base_url = settings.SERPAPI_URL
-
-    def fetch_flight_price(
+    def __init__(
         self,
-        origin: str,
-        destination: str,
-        departure_date: str,
-        return_date: str | None = None,
-    ) -> dict | None:
-        """
-        Fetch flight price from SerpAPI
+        prices: FlightPriceRepository,
+        airlines: AirlineRepository,
+        routes: RouteService,
+        provider: FlightPriceProvider | None = None,
+    ) -> None:
+        self._prices = prices
+        self._airlines = airlines
+        self._routes = routes
+        self._provider = provider
 
-        Args:
-            origin: IATA code (e.g., "JFK")
-            destination: IATA code (e.g., "LHR")
-            departure_date: ISO format (e.g., "2026-10-01")
-            return_date: ISO format or None for one-way
+    def get_history(self, user: User, route_id: str) -> list[FlightPrice] | None:
+        if self._routes.get_route(user, route_id) is None:
+            return None
+        return self._prices.list_for_route(route_id)
 
-        Returns:
-            {"price": float, "airline": str, "currency": str} or None
-        """
-
-        try:
-            params = {
-                "engine": "google_flights",
-                "departure_id": origin,
-                "arrival_id": destination,
-                "outbound_date": departure_date,
-                "type": "1" if not return_date else "2",
-                "api_key": self.api_key,
-            }
-
-            if return_date:
-                params["return_date"] = return_date
-
-            logger.info(f"Fetching price: {origin} → {destination} on {departure_date}")
-
-            response = requests.get(self.base_url, params=params, timeout=10)
-            response.raise_for_status()
-
-            data = response.json()
-
-            if "error" in data:
-                logger.error(f"SerpAPI error: {data['error']}")
-                raise TaskExecutionError(f"SerpAPI error: {data['error']}")
-
-            best_price = self._extract_best_price(data)
-
-            if not best_price:
-                logger.warning(f"No price found for {origin} → {destination}")
-                return None
-
-            logger.info(f"Found price: ${best_price['price']} {best_price['currency']}")
-            return best_price
-
-        except requests.exceptions.Timeout as exc:
-            logger.error(f"SerpAPI timeout: {exc}")
-            raise TaskExecutionError(f"SerpAPI timeout: {exc}") from exc
-
-        except requests.exceptions.RequestException as exc:
-            logger.error(f"SerpAPI network error: {exc}")
-            raise TaskExecutionError(f"SerpAPI network error: {exc}") from exc
-
-        except Exception as exc:
-            logger.error(f"Unexpected error: {exc}")
-            raise
-
-    def _extract_best_price(self, data: dict) -> dict | None:
-        try:
-            # structure: data["best_flights"][0]["price"]
-            if "best_flights" not in data or not data["best_flights"]:
-                return None
-
-            best = data["best_flights"][0]
-
-            return {
-                "price": best.get("price", 0),
-                "airline": best.get("airline", "Unknown"),
-                "currency": data.get("currency", "USD"),
-            }
-
-        except (KeyError, IndexError, TypeError) as exc:
-            logger.error(f"Error parsing SerpAPI response: {exc}")
+    def get_stats(self, user: User, route_id: str, days: int = 30) -> dict | None:
+        if self._routes.get_route(user, route_id) is None:
             return None
 
+        since = datetime.now(timezone.utc) - timedelta(days=days)
+        aggregates = self._prices.aggregate_since(route_id, since)
 
-def get_history(db: Session, user: User, route_id: str) -> list[FlightPrice] | None:
-    route = route_service.get_route(db=db, user=user, route_id=route_id)
-    if not route:
-        return None
+        return {
+            "route_id": route_id,
+            "period_days": days,
+            "sample_count": aggregates["sample_count"],
+            "currency": self._prices.latest_currency(route_id),
+            "min_price": aggregates["min_price"],
+            "max_price": aggregates["max_price"],
+            "avg_price": aggregates["avg_price"],
+        }
 
-    query = select(FlightPrice).where(FlightPrice.route_id == route_id).order_by(FlightPrice.fetched_at.desc())
+    def refresh_prices(self, user: User, route_id: str) -> list[FlightPrice] | None:
+        if self._provider is None:
+            raise RuntimeError("FlightPriceService was created without a provider")
+        route = self._routes.get_route(user, route_id)
+        if route is None:
+            return None
 
-    return list(db.execute(query).scalars().all())
+        offers = self._provider.fetch_offers(
+            origin_code=route.origin_id,
+            destination_code=route.destination_id,
+            departure_date=route.departure_date,
+            return_date=route.return_date,
+        )
+        return [self._prices.add(self._to_price(route_id, offer)) for offer in offers]
 
-
-def get_stats(db: Session, user: User, route_id: str, days: int = 30) -> dict | None:
-    route = route_service.get_route(db=db, user=user, route_id=route_id)
-    if not route:
-        return None
-
-    since = datetime.now(timezone.utc) - timedelta(days=days)
-
-    query = select(
-        func.min(FlightPrice.price).label("min_price"),
-        func.max(FlightPrice.price).label("max_price"),
-        func.avg(FlightPrice.price).label("avg_price"),
-        func.count(FlightPrice.price).label("sample_count"),
-    ).where(
-        FlightPrice.route_id == route_id,
-        FlightPrice.fetched_at >= since,
-    )
-
-    currency = db.execute(
-        select(FlightPrice.currency)
-        .where(FlightPrice.route_id == route_id)
-        .order_by(FlightPrice.fetched_at.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-
-    result = db.execute(query).one()
-
-    return {
-        "route_id": route_id,
-        "period_days": days,
-        "sample_count": result.sample_count,
-        "currency": currency,
-        "min_price": result.min_price,
-        "max_price": result.max_price,
-        "avg_price": result.avg_price,
-    }
-
-
-flight_price_service = FlightPriceService()
+    def _to_price(self, route_id: str, offer: FlightOffer) -> FlightPrice:
+        airline_id = self._airlines.find_id(offer["airline"])
+        return FlightPrice(
+            route_id=route_id,
+            airline_id=airline_id,
+            price=Decimal(offer["price"]),
+            currency=offer["currency"],
+        )

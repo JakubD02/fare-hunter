@@ -1,57 +1,44 @@
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
+from app.api.v1.schemas.price_alert import PriceAlertCreate, PriceAlertUpdate
 from app.models.price_alert import PriceAlert
-from app.models.route import Route
 from app.models.user import User
-from app.schemas.price_alert import PriceAlertCreate, PriceAlertUpdate
-from app.services import route_service
+from app.repositories.alert_repository import AlertRepository
+from app.services.route_service import RouteService
 
 
-def get_alert(db: Session, user: User, route_id: str) -> PriceAlert | None:
-    query = (
-        select(PriceAlert)
-        .join(Route, PriceAlert.route_id == Route.id)
-        .where(
-            Route.id == route_id,
-            Route.user_id == user.id,
-        )
-    )
+class AlertService:
+    def __init__(self, alerts: AlertRepository, routes: RouteService) -> None:
+        self._alerts = alerts
+        self._routes = routes
 
-    return db.execute(query).scalar_one_or_none()
+    def get_alert(self, user: User, route_id: str) -> PriceAlert | None:
+        return self._alerts.get_for_route(user, route_id)
 
+    def upsert_alert(self, user: User, route_id: str, alert_in: PriceAlertUpdate) -> PriceAlert | None:
+        if self._routes.get_route(user, route_id) is None:
+            return None
 
-def upsert_alert(db: Session, user: User, route_id: str, alert_in: PriceAlertUpdate) -> PriceAlert | None:
-    route = route_service.get_route(db=db, user=user, route_id=route_id)
-    if not route:
-        return None
+        data = alert_in.model_dump(exclude_unset=True)
 
-    alert = get_alert(db=db, user=user, route_id=route_id)
-    data = alert_in.model_dump(exclude_unset=True)
+        if "threshold_price" in data and data["threshold_price"] is None:
+            raise ValueError("threshold_price cannot be null")
 
-    if "threshold_price" in data and data["threshold_price"] is None:
-        raise ValueError("threshold_price cannot be null")
+        alert = self._alerts.get_for_route(user, route_id)
 
-    if alert:
-        for field, value in data.items():
-            setattr(alert, field, value)
-    else:
+        if alert is not None:
+            for field, value in data.items():
+                setattr(alert, field, value)
+            return self._alerts.save(alert)
+
         if "threshold_price" not in data:
             raise ValueError("threshold_price is required to create an alert")
+
         create_in = PriceAlertCreate(route_id=route_id, **data)
-        alert = PriceAlert(**create_in.model_dump())
+        return self._alerts.add(PriceAlert(**create_in.model_dump()))
 
-    db.add(alert)
-    db.commit()
-    db.refresh(alert)
-    return alert
+    def remove_alert(self, user: User, route_id: str) -> bool:
+        alert = self._alerts.get_for_route(user, route_id)
+        if alert is None:
+            return False
 
-
-def remove_alert(db: Session, user: User, route_id: str) -> bool:
-    alert = get_alert(db=db, user=user, route_id=route_id)
-    if not alert:
-        return False
-
-    db.delete(alert)
-    db.commit()
-    return True
+        self._alerts.delete(alert)
+        return True

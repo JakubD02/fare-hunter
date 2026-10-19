@@ -1,82 +1,39 @@
 from jwt import InvalidTokenError as JWTError
-from passlib.context import CryptContext
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
-from app.core.security import (
-    create_access_token,
-    decode_refresh_token,
-)
+from app.core.security import create_access_token, decode_refresh_token, verify_password
 from app.models.user import User
-from app.schemas.user import UserCreate
-
-bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.services.user_service import UserService
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt_context.verify(plain_password, hashed_password)
+class AuthService:
+    def __init__(self, users: UserService) -> None:
+        self._users = users
 
+    def authenticate(self, email: str, password: str) -> User | None:
+        user = self._users.get_by_email(email)
+        if user is None or not user.is_active:
+            return None
+        if not verify_password(password, user.password_hash):
+            return None
+        return user
 
-def get_password_hash(password: str) -> str:
-    return bcrypt_context.hash(password)
+    def get_active_user(self, user_id: str) -> User | None:
+        user = self._users.get_by_id(user_id)
+        if user is None or not user.is_active:
+            return None
+        return user
 
+    def refresh_access_token(self, refresh_token: str) -> str | None:
+        try:
+            decoded = decode_refresh_token(refresh_token)
+        except JWTError:
+            return None
 
-def get_user_by_email(db: Session, email: str) -> User | None:
-    stmt = select(User).where(User.email == email)
-    return db.execute(stmt).scalar_one_or_none()
+        user_id = decoded.get("user_id")
+        if not user_id:
+            return None
 
-
-def get_user_by_id(db: Session, user_id: str) -> User | None:
-    stmt = select(User).where(User.id == user_id)
-    return db.execute(stmt).scalar_one_or_none()
-
-
-def authenticate_user(db: Session, username: str, password: str) -> User | None:
-    user = get_user_by_email(db, email=username)
-    if not user:
-        return None
-    if not user.is_active:
-        return None
-
-    if not verify_password(password, user.password_hash):
-        return None
-    return user
-
-
-def create_user(db: Session, user_in: UserCreate) -> User | None:
-    user = User(
-        first_name=user_in.first_name,
-        email=user_in.email,
-        password_hash=get_password_hash(user_in.password),
-    )
-
-    db.add(user)
-
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        return None
-
-    db.refresh(user)
-    return user
-
-
-def refresh_access_token(db: Session, refresh_token: str) -> str | None:
-    try:
-        decoded_token = decode_refresh_token(refresh_token)
-    except JWTError:
-        return None
-
-    user_id = decoded_token.get("user_id")
-    if not user_id:
-        return None
-
-    user = get_user_by_id(db, user_id)
-    if user is None or not user.is_active:
-        return None
-
-    new_access_token = create_access_token(email=user.email, user_id=str(user.id))
-
-    return new_access_token
+        user = self.get_active_user(user_id)
+        if user is None:
+            return None
+        return create_access_token(email=user.email, user_id=str(user.id))

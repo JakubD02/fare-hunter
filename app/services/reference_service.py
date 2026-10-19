@@ -1,30 +1,36 @@
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
-
 from app.models.airline import Airline
 from app.models.airport import Airport
+from app.repositories.airline_repository import AirlineRepository
+from app.repositories.airport_repository import AirportRepository
 
 
-def find_airline_id(db: Session, airline_name: str | None) -> str | None:
-    """Resolve an airline by IATA code or name, case-insensitively."""
-    if not airline_name:
-        return None
+class ReferenceService:
+    def __init__(self, airports: AirportRepository, airlines: AirlineRepository) -> None:
+        self._airports = airports
+        self._airlines = airlines
 
-    needle = airline_name.strip().lower()
-    if not needle:
-        return None
+    def list_airports(self) -> list[Airport]:
+        return self._airports.list_all()
 
-    stmt = select(Airline.id).where((func.lower(Airline.iata_code) == needle) | (func.lower(Airline.name) == needle))
-    return db.execute(stmt).scalar_one_or_none()
+    def get_airport(self, airport_id: str) -> Airport:
+        airport_id = airport_id.strip()
+        if not airport_id:
+            raise LookupError("Airport ID cannot be empty")
 
+        airport = self._airports.get_by_id(airport_id)
+        if airport is None:
+            raise LookupError(f"Airport with ID {airport_id} not found")
+        return airport
 
-def list_airports(db: Session) -> list[Airport]:
-    query = select(Airport).order_by(Airport.name)
+    def list_airlines(self) -> list[Airline]:
+        return self._airlines.list_all()
 
-    return list(db.scalars(query).all())
+    def find_airline_id(self, airline_name: str | None) -> str | None:
+        if not airline_name:
+            return None
 
+        needle = airline_name.strip()
+        if not needle:
+            return None
 
-def list_airlines(db: Session) -> list[Airline]:
-    query = select(Airline).order_by(Airline.name)
-
-    return list(db.scalars(query).all())
+        return self._airlines.find_id(needle)
