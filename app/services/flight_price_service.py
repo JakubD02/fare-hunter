@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -7,6 +8,8 @@ from app.repositories.airline_repository import AirlineRepository
 from app.repositories.flight_price_repository import FlightPriceRepository
 from app.services.flight_price_provider import FlightOffer, FlightPriceProvider
 from app.services.route_service import RouteService
+
+logger = logging.getLogger(__name__)
 
 
 class FlightPriceService:
@@ -24,15 +27,20 @@ class FlightPriceService:
 
     def get_history(self, user: User, route_id: str) -> list[FlightPrice] | None:
         if self._routes.get_route(user, route_id) is None:
+            logger.warning("history rejected: route not found route_id=%s user_id=%s", route_id, user.id)
             return None
-        return self._prices.list_for_route(route_id)
+        history = self._prices.list_for_route(route_id)
+        logger.debug("history loaded route_id=%s rows=%d", route_id, len(history))
+        return history
 
     def get_stats(self, user: User, route_id: str, days: int = 30) -> dict | None:
         if self._routes.get_route(user, route_id) is None:
+            logger.warning("stats rejected: route not found route_id=%s user_id=%s", route_id, user.id)
             return None
 
         since = datetime.now(timezone.utc) - timedelta(days=days)
         aggregates = self._prices.aggregate_since(route_id, since)
+        logger.debug("stats computed route_id=%s days=%d samples=%d", route_id, days, aggregates["sample_count"])
 
         return {
             "route_id": route_id,
@@ -49,7 +57,17 @@ class FlightPriceService:
             raise RuntimeError("FlightPriceService was created without a provider")
         route = self._routes.get_route(user, route_id)
         if route is None:
+            logger.warning("refresh rejected: route not found route_id=%s user_id=%s", route_id, user.id)
             return None
+
+        logger.info(
+            "refresh started route_id=%s %s->%s departure=%s return=%s",
+            route_id,
+            route.origin_id,
+            route.destination_id,
+            route.departure_date,
+            route.return_date,
+        )
 
         offers = self._provider.fetch_offers(
             origin_code=route.origin_id,
@@ -57,10 +75,16 @@ class FlightPriceService:
             departure_date=route.departure_date,
             return_date=route.return_date,
         )
+        if not offers:
+            logger.warning("refresh got no offers route_id=%s", route_id)
+            return []
+
         return [self._prices.add(self._to_price(route_id, offer)) for offer in offers]
 
     def _to_price(self, route_id: str, offer: FlightOffer) -> FlightPrice:
         airline_id = self._airlines.find_id(offer["airline"])
+        if airline_id is None:
+            logger.warning("unknown airline in offer airline=%s route_id=%s", offer["airline"], route_id)
         return FlightPrice(
             route_id=route_id,
             airline_id=airline_id,

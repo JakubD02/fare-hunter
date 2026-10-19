@@ -1,7 +1,11 @@
+import logging
+
 from app.models.airline import Airline
 from app.models.airport import Airport
 from app.repositories.airline_repository import AirlineRepository
 from app.repositories.airport_repository import AirportRepository
+
+logger = logging.getLogger(__name__)
 
 
 class ReferenceService:
@@ -10,20 +14,26 @@ class ReferenceService:
         self._airlines = airlines
 
     def list_airports(self) -> list[Airport]:
-        return self._airports.list_all()
+        airports = self._airports.list_all()
+        logger.debug("airports listed count=%d", len(airports))
+        return airports
 
     def get_airport(self, airport_id: str) -> Airport:
         airport_id = airport_id.strip()
         if not airport_id:
+            logger.warning("airport lookup rejected: empty id")
             raise LookupError("Airport ID cannot be empty")
 
         airport = self._airports.get_by_id(airport_id)
         if airport is None:
+            logger.warning("airport not found id=%s", airport_id)
             raise LookupError(f"Airport with ID {airport_id} not found")
         return airport
 
     def list_airlines(self) -> list[Airline]:
-        return self._airlines.list_all()
+        airlines = self._airlines.list_all()
+        logger.debug("airlines listed count=%d", len(airlines))
+        return airlines
 
     def find_airline_id(self, airline_name: str | None) -> str | None:
         if not airline_name:
@@ -33,4 +43,6 @@ class ReferenceService:
         if not needle:
             return None
 
-        return self._airlines.find_id(needle)
+        airline_id = self._airlines.find_id(needle)
+        logger.debug("airline resolved needle=%s found=%s", needle, airline_id is not None)
+        return airline_id

@@ -1,3 +1,4 @@
+import logging
 import random
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
@@ -11,6 +12,8 @@ from app.constants.mock import (
 from app.enums.currency import Currency
 from app.services.flight_price_service import FlightOffer
 
+logger = logging.getLogger(__name__)
+
 
 class SerpApiMockClient:
     def __init__(self, airline_names: list[str], seed: int | None = None) -> None:
@@ -18,6 +21,7 @@ class SerpApiMockClient:
             raise ValueError("airline_names cannot be empty")
         self._airline_names = airline_names
         self._rng = random.Random(seed)
+        logger.info("mock flight client ready airlines=%s seed=%s", airline_names, seed)
 
     def fetch_offers(
         self,
@@ -26,6 +30,7 @@ class SerpApiMockClient:
         departure_date: date,
         return_date: date | None = None,
     ) -> list[FlightOffer]:
+        logger.info("mock fetch %s->%s departure=%s", origin_code, destination_code, departure_date)
         offers = [
             FlightOffer(
                 airline=self._rng.choice(self._airline_names),
@@ -40,7 +45,14 @@ class SerpApiMockClient:
         ]
 
         offers.sort(key=lambda offer: offer["price"])
-        return offers[:MOCK_NUM_RESULTS]
+        result = offers[:MOCK_NUM_RESULTS]
+        logger.debug(
+            "mock generated=%d returned=%d cheapest=%s",
+            MOCK_TOTAL_GENERATED,
+            len(result),
+            result[0]["price"] if result else None,
+        )
+        return result
 
     def _random_price(self) -> Decimal:
         raw = self._rng.uniform(MOCK_PRICE_MIN, MOCK_PRICE_MAX)
