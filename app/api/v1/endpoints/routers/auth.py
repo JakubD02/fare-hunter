@@ -5,15 +5,17 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from starlette import status
 
+from app.api.auth import CurrentUser
+from app.api.v1.schemas.token import AccessToken, TokenPair
+from app.api.v1.schemas.user import UserCreate, UserRead
+from app.core.database import get_db
 from app.core.security import (
-    CurrentUser,
     create_access_token,
     create_refresh_token,
 )
-from app.database import get_db
-from app.schemas.token import AccessToken, RefreshRequest, TokenPair
-from app.schemas.user import UserCreate, UserRead
-from app.services.auth_service import authenticate_user, create_user, refresh_access_token
+from app.repositories.user_repository import UserRepository
+from app.services.auth_service import AuthService
+from app.services.user_service import UserService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -21,9 +23,17 @@ db_dependency = Annotated[Session, Depends(get_db)]
 form_data_dependency = Annotated[OAuth2PasswordRequestForm, Depends()]
 
 
+def _user_service(db: Session) -> UserService:
+    return UserService(users=UserRepository(db))
+
+
+def _auth_service(db: Session) -> AuthService:
+    return AuthService(users=_user_service(db))
+
+
 @router.post("/token", response_model=TokenPair)
-def login(db: db_dependency, form_data: form_data_dependency):
-    user = authenticate_user(db=db, username=form_data.username, password=form_data.password)
+def login(db: db_dependency, form: form_data_dependency):
+    user = _auth_service(db).authenticate(form.username, form.password)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong login or password!")
 
@@ -35,7 +45,7 @@ def login(db: db_dependency, form_data: form_data_dependency):
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserRead)
 def register(user_in: UserCreate, db: db_dependency):
-    user = create_user(db=db, user_in=user_in)
+    user = _user_service(db).register(user_in)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -44,17 +54,17 @@ def register(user_in: UserCreate, db: db_dependency):
     return user
 
 
-@router.get("/me", response_model=UserRead)
-def read_me(current_user: CurrentUser):
-    return current_user
-
-
 @router.post("/refresh", response_model=AccessToken)
-def refresh(payload: RefreshRequest, db: db_dependency):
-    access_token = refresh_access_token(db=db, refresh_token=payload.refresh_token)
+def refresh(db: db_dependency, refresh_token: str):
+    access_token = _auth_service(db).refresh_access_token(refresh_token)
     if not access_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired refresh token",
         )
     return AccessToken(access_token=access_token)
+
+
+@router.get("/me", response_model=UserRead)
+def read_me(user: CurrentUser):
+    return user

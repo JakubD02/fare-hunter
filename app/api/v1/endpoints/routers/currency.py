@@ -1,8 +1,8 @@
 import httpx
 from fastapi import APIRouter, HTTPException, Query
 
+from app.api.v1.schemas.currency import ConvertResponse
 from app.enums.currency import Currency
-from app.schemas.currency import ConvertResponse
 from app.services import currency as currency_service
 
 router = APIRouter(prefix="/currency", tags=["currency"])
