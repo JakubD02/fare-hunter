@@ -1,84 +1,84 @@
-import logging
+# import logging
 
-from sqlalchemy import select
+# from sqlalchemy import select
 
-from app.celery_app import celery_app
-from app.core.exceptions import EmailSendError
-from app.database import SessionLocal
-from app.models.price_alert import PriceAlert
-from app.models.route import Route
-from app.services.auth_service import get_user_by_id
-from app.services.email_service import email_service
+# from app.celery_app import celery_app
+# from app.core.database import SessionLocal
+# from app.core.exceptions import EmailSendError
+# from app.models.price_alert import PriceAlert
+# from app.models.route import Route
+# from app.services. import get_user_by_id
+# from app.services.email_service import email_service
 
-logger = logging.getLogger(__name__)
-
-
-@celery_app.task(bind=True, max_retries=3)
-def send_alert_confirmation_email_task(self, user_id: str, alert_id: int):
-    db = SessionLocal()
-    try:
-        user = get_user_by_id(db, user_id)
-
-        if not user:
-            logger.warning(f"User {user_id} not found")
-            return
-
-        alert = db.execute(select(PriceAlert).where(PriceAlert.id == alert_id)).scalar_one_or_none()
-        if not alert:
-            logger.warning(f"Alert {alert_id} not found")
-            return
-
-        route = db.execute(select(Route).where(Route.id == alert.route_id)).scalar_one_or_none()
-        if not route:
-            logger.warning(f"Route {alert.route_id} not found")
-            return
-
-        success = email_service.send_alert_confirmation_email(
-            to_email=user.email,
-            route=f"{route.origin_id} -> {route.destination_id}",
-            threshold=float(alert.threshold_price),
-        )
-
-        if not success:
-            raise EmailSendError(f"Failed to send email to {user.email}")
-
-    except EmailSendError as e:
-        logger.error(f"Error sending alert confirmation email: {e}")
-        raise self.retry(exc=e, countdown=300)
-    except (ValueError, LookupError) as e:
-        logger.error(f"Invalid data in alert confirmation email task: {e}")
-
-    finally:
-        db.close()
+# logger = logging.getLogger(__name__)
 
 
-@celery_app.task(bind=True, max_retries=3)
-def send_price_drop_email_task(self, user_id: str, route_id: str, old_price: float, new_price: float):
-    db = SessionLocal()
-    try:
-        user = get_user_by_id(db, user_id)
+# @celery_app.task(bind=True, max_retries=3)
+# def send_alert_confirmation_email_task(self, user_id: str, alert_id: int):
+#     db = SessionLocal()
+#     try:
+#         user = get_user_by_id(db, user_id)
 
-        if not user:
-            logger.warning(f"User {user_id} not found")
-            return
+#         if not user:
+#             logger.warning(f"User {user_id} not found")
+#             return
 
-        route = db.execute(select(Route).where(Route.id == route_id)).scalar_one_or_none()
-        if not route:
-            logger.warning(f"Route {route_id} not found")
-            return
+#         alert = db.execute(select(PriceAlert).where(PriceAlert.id == alert_id)).scalar_one_or_none()
+#         if not alert:
+#             logger.warning(f"Alert {alert_id} not found")
+#             return
 
-        success = email_service.send_price_alert_email(
-            to_email=user.email,
-            route=f"{route.origin_id} → {route.destination_id}",
-            old_price=old_price,
-            new_price=new_price,
-        )
+#         route = db.execute(select(Route).where(Route.id == alert.route_id)).scalar_one_or_none()
+#         if not route:
+#             logger.warning(f"Route {alert.route_id} not found")
+#             return
 
-        if not success:
-            raise EmailSendError(f"Failed to send email {user.email}")
+#         success = email_service.send_alert_confirmation_email(
+#             to_email=user.email,
+#             route=f"{route.origin_id} -> {route.destination_id}",
+#             threshold=float(alert.threshold_price),
+#         )
 
-    except EmailSendError as e:
-        logger.error(f"Error sending price drop email: {e}")
-        raise self.retry(exc=e, countdown=300)
-    finally:
-        db.close()
+#         if not success:
+#             raise EmailSendError(f"Failed to send email to {user.email}")
+
+#     except EmailSendError as e:
+#         logger.error(f"Error sending alert confirmation email: {e}")
+#         raise self.retry(exc=e, countdown=300)
+#     except (ValueError, LookupError) as e:
+#         logger.error(f"Invalid data in alert confirmation email task: {e}")
+
+#     finally:
+#         db.close()
+
+
+# @celery_app.task(bind=True, max_retries=3)
+# def send_price_drop_email_task(self, user_id: str, route_id: str, old_price: float, new_price: float):
+#     db = SessionLocal()
+#     try:
+#         user = get_user_by_id(db, user_id)
+
+#         if not user:
+#             logger.warning(f"User {user_id} not found")
+#             return
+
+#         route = db.execute(select(Route).where(Route.id == route_id)).scalar_one_or_none()
+#         if not route:
+#             logger.warning(f"Route {route_id} not found")
+#             return
+
+#         success = email_service.send_price_alert_email(
+#             to_email=user.email,
+#             route=f"{route.origin_id} → {route.destination_id}",
+#             old_price=old_price,
+#             new_price=new_price,
+#         )
+
+#         if not success:
+#             raise EmailSendError(f"Failed to send email {user.email}")
+
+#     except EmailSendError as e:
+#         logger.error(f"Error sending price drop email: {e}")
+#         raise self.retry(exc=e, countdown=300)
+#     finally:
+#         db.close()

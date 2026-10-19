@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.database import engine
+from app.core.database import engine
 from app.models import Airline, Airport
 from data import AIRLINES_DATA, AIRPORTS_DATA
 

@@ -6,14 +6,15 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.database import get_db
+from app.core.database import get_db
 from app.main import app
 from app.models import Base
 from app.models.airline import Airline
 from app.models.airport import Airport
 from app.models.route import Route
-from app.tasks.email_tasks import send_alert_confirmation_email_task, send_price_drop_email_task
-from app.tasks.price_tasks import fetch_prices_for_route
+
+# from app.tasks.email_tasks import send_alert_confirmation_email_task, send_price_drop_email_task
+# from app.tasks.price_tasks import fetch_prices_for_route
 from data import AIRLINES_DATA, AIRPORTS_DATA
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -260,12 +261,12 @@ def other_user_price_history(client, other_registered_user, other_user_route, db
     return other_user_route
 
 
-@pytest.fixture(autouse=True)
-def no_celery_delay(monkeypatch):
-    """Don't send Celery tasks to the broker during tests"""
-    for task in (
-        fetch_prices_for_route,
-        send_alert_confirmation_email_task,
-        send_price_drop_email_task,
-    ):
-        monkeypatch.setattr(task, "delay", lambda *args, **kwargs: None)
+# @pytest.fixture(autouse=True)
+# def no_celery_delay(monkeypatch):
+#     """Don't send Celery tasks to the broker during tests"""
+#     for task in (
+#         fetch_prices_for_route,
+#         send_alert_confirmation_email_task,
+#         send_price_drop_email_task,
+#     ):
+#         monkeypatch.setattr(task, "delay", lambda *args, **kwargs: None)
