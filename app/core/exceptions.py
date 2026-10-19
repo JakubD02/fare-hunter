@@ -1,6 +1,3 @@
-"""Custom application exceptions"""
-
-
 class EmailSendError(Exception):
     pass
 
