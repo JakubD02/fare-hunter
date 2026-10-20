@@ -1,18 +1,22 @@
 # 🛫 Fare Hunter
 
-A FastAPI-based flight price tracker with real-time alerts and email notifications. Track flight prices, set price thresholds, and get notified when deals appear.
+[![Tests](https://github.com/JakubD02/fare-hunter/actions/workflows/tests.yml/badge.svg)](https://github.com/JakubD02/fare-hunter/actions/workflows/tests.yml)
+
+A FastAPI-based flight price tracker with price alerts and email notifications. Track flight routes, set price thresholds, and get notified when deals appear.
 
 ---
 
 ## 🎯 Features
 
-- ✅ **User Authentication** - JWT-based registration, login, refresh tokens
-- ✅ **Flight Routes** - Create & manage tracked flight routes (origin → destination)
-- ✅ **Price Tracking** - Async background job fetches flight prices via SerpAPI
-- ✅ **Price Alerts** - Set thresholds; get notified when price drops below
-- ✅ **Email Notifications** - SendGrid integration for alert confirmations & price drops
-- ✅ **Celery Background Tasks** - Scheduled price fetches (3/day via Celery Beat)
-- ✅ **Docker & Docker Compose** - Full containerized setup (app, worker, beat, postgres, redis)
+- ✅ **User authentication**: JWT registration, login and refresh tokens
+- ✅ **Flight routes**: create and manage tracked routes (origin → destination)
+- ✅ **Price tracking**: background Celery job fetches prices via SerpAPI (Google Flights)
+- ✅ **Price alerts**: set a threshold and get notified when the price drops below it
+- ✅ **Currency conversion**: alerts can be expressed in different currencies
+- ✅ **Statistics**: price statistics per route (`/routes/{route_id}/stats`)
+- ✅ **Email notifications**: SendGrid for alert confirmations and price-drop emails
+- ✅ **Celery Beat**: scheduled price fetch every 8 hours
+- ✅ **Docker Compose**: containerized setup for app, worker, beat, database and Redis
 
 ---
 
@@ -20,21 +24,21 @@ A FastAPI-based flight price tracker with real-time alerts and email notificatio
 
 | Component | Technology |
 |-----------|-----------|
-| **Web Framework** | FastAPI 0.104+ |
-| **ORM** | SQLAlchemy 2.0 with Pydantic v2 |
-| **Database** | PostgreSQL 15 |
-| **Cache & Broker** | Redis 7 |
-| **Task Queue** | Celery 5.3 |
-| **Scheduler** | Celery Beat |
-| **Email** | SendGrid API |
-| **Flight Data** | SerpAPI (Google Flights scraper) |
-| **Auth** | JWT (PyJWT) |
-| **Validation** | Pydantic v2 |
-| **Testing** | pytest + pytest-asyncio |
-| **Type Checking** | MyPy 1.7.1 |
-| **Containerization** | Docker & Docker Compose |
-| **Linting** | Ruff |
-| **Package Manager** | uv |
+| Web framework | FastAPI |
+| ORM | SQLAlchemy 2.0 |
+| Validation & settings | Pydantic v2, pydantic-settings |
+| Database | PostgreSQL (SQLite for local default) |
+| Migrations | Alembic |
+| Cache & broker | Redis |
+| Task queue & scheduler | Celery 5 + Celery Beat |
+| Flight data | SerpAPI |
+| Email | SendGrid |
+| Auth | JWT (PyJWT), passlib |
+| Testing | pytest, pytest-asyncio |
+| Type checking | mypy |
+| Linting & formatting | Ruff |
+| Package manager | uv |
+| Containerization | Docker, Docker Compose |
 
 ---
 
@@ -43,63 +47,86 @@ A FastAPI-based flight price tracker with real-time alerts and email notificatio
 ```
 fare-hunter/
 ├── app/
+│   ├── api/
+│   │   ├── auth.py                    # Auth dependencies (CurrentUser)
+│   │   └── v1/
+│   │       ├── endpoints/routers/     # FastAPI routers
+│   │       │   ├── alerts.py
+│   │       │   ├── auth.py
+│   │       │   ├── currency.py
+│   │       │   ├── reference.py       # airports, airlines
+│   │       │   ├── routes.py
+│   │       │   └── statistics.py
+│   │       └── schemas/               # Pydantic request/response models
+│   │           ├── airline.py
+│   │           ├── airport.py
+│   │           ├── currency.py
+│   │           ├── flight_price.py
+│   │           ├── price_alert.py
+│   │           ├── route.py
+│   │           ├── token.py
+│   │           └── user.py
 │   ├── core/
-│   │   ├── config.py           # Settings, env vars, Celery config
-│   │   ├── exceptions.py       # Custom exceptions
-│   │   └── security.py         # JWT, password hashing, auth deps
-│   ├── models/
-│   │   ├── base.py             # DeclarativeBase for SQLAlchemy 2.0
-│   │   ├── user.py             # User model (id, email, password, created_at)
-│   │   ├── route.py            # Route (origin, destination, dates)
-│   │   ├── flight_price.py     # FlightPrice (price, airline, currency)
-│   │   ├── price_alert.py      # PriceAlert (threshold, is_active)
-│   │   ├── airport.py          # Airport (iata_code, name, city, country)
-│   │   └── airline.py          # Airline (iata_code, name)
-│   ├── schemas/
-│   │   ├── user.py             # UserCreate, UserRead
-│   │   ├── route.py            # RouteCreate, RouteRead, RouteUpdate
-│   │   ├── price_alert.py      # PriceAlertCreate, PriceAlertRead
-│   │   ├── flight_price.py     # FlightPriceRead
-│   │   ├── airport.py          # AirportRead
-│   │   ├── airline.py          # AirlineRead
-│   │   └── token.py            # TokenRead
-│   ├── routers/
-│   │   ├── auth.py             # POST /auth/register, /auth/token, /auth/me
-│   │   ├── routes.py           # GET/POST/PATCH /routes/
-│   │   ├── alerts.py           # GET/PUT/DELETE /{route_id}/alert
-│   │   ├── reference.py        # GET /airports, /airlines
-│   │   └── statistics.py       # GET /routes/{route_id}/stats (optional)
-│   ├── services/
-│   │   ├── auth_service.py     # User registration, password verification
-│   │   ├── routes_service.py   # Route CRUD operations
-│   │   ├── alert_service.py    # Alert upsert, removal
-│   │   ├── email_service.py    # SendGrid email sending
-│   │   ├── flight_price_service.py  # SerpAPI integration
-│   │   └── reference_service.py     # Airport/airline queries
-│   ├── tasks/
-│   │   ├── price_tasks.py      # fetch_prices_for_route, fetch_all_prices_periodic
-│   │   └── email_tasks.py      # send_alert_confirmation_email, send_price_drop_email
-│   ├── database.py             # SQLAlchemy engine, SessionLocal, get_db
-│   ├── celery_app.py           # Celery app initialization
-│   ├── main.py                 # FastAPI app with lifespan
-│   └── constants/              # Constants for models (max lengths, defaults)
-├── init_db.py                  # Database initialization + seed data
-├── docker-compose.yml          # 5 services: app, worker, beat, postgres, redis
-├── Dockerfile                  # Multi-stage build
-├── requirements.txt            # Python dependencies
-├── alembic/                    # Database migrations (optional, using init_db.py instead)
+│   │   ├── config.py                  # Settings loaded from environment (.env)
+│   │   ├── constants.py               # Domain constants as frozen Pydantic models
+│   │   ├── database.py                # Engine, session, get_db
+│   │   ├── exceptions.py
+│   │   └── security.py                # JWT and password helpers
+│   ├── enums/
+│   │   └── currency.py
+│   ├── models/                        # SQLAlchemy models
+│   │   ├── airline.py
+│   │   ├── airport.py
+│   │   ├── base.py
+│   │   ├── flight_price.py
+│   │   ├── price_alert.py
+│   │   ├── route.py
+│   │   └── user.py
+│   ├── repositories/                  # Data access layer
+│   │   ├── airline_repository.py
+│   │   ├── airport_repository.py
+│   │   ├── alert_repository.py
+│   │   ├── flight_price_repository.py
+│   │   ├── route_repository.py
+│   │   └── user_repository.py
+│   ├── services/                      # Business logic
+│   │   ├── alert_service.py
+│   │   ├── auth_service.py
+│   │   ├── currency.py
+│   │   ├── flight_price_provider.py   # Provider interface
+│   │   ├── flight_price_service.py
+│   │   ├── reference_service.py
+│   │   ├── route_service.py
+│   │   ├── serpapi_mock_client.py     # Mock SerpAPI client
+│   │   └── user_service.py
+│   ├── tasks/                         # Celery tasks
+│   │   ├── email_tasks.py
+│   │   └── price_tasks.py
+│   ├── celery_app.py
+│   └── main.py                        # FastAPI app entry point
+├── alembic/                           # Database migrations
+│   ├── env.py
+│   └── versions/
+├── data/
+│   ├── airlines.json                  # Seed data
+│   └── airports.json
+├── scripts/
+│   ├── init_db.py                     # Database initialization
+│   └── seed_data.py                   # Loads data/*.json
 ├── tests/
-│   ├── conftest.py             # pytest fixtures (db, client, test user)
-│   ├── auth/                   # Auth endpoint tests
-│   ├── routes/                 # Routes endpoint tests
-│   ├── alerts/                 # Alerts endpoint tests
-│   ├── statistics/             # Statistics endpoint tests
-│   └── mocks/                  # Mock data for tests
-├── .github/workflows/
-│   └── tests.yml               # GitHub Actions CI/CD
-├── .env.example                # Environment variables template
-├── pytest.ini                  # pytest configuration
-└── README.md                   # This file
+│   ├── auth/                          # Login, registration, security
+│   ├── routes/                        # Routes, airlines, airports, alerts, statistics
+│   ├── tasks/                         # Celery tasks
+│   ├── mocks/                         # Fake SerpAPI responses
+│   ├── conftest.py
+│   └── test_health.py
+├── alembic.ini
+├── docker-compose.yml
+├── Dockerfile
+├── pyproject.toml                     # Dependencies (managed by uv)
+├── uv.lock
+├── pytest.ini
+└── README.md
 ```
 
 ---
@@ -108,117 +135,90 @@ fare-hunter/
 
 ### Prerequisites
 
-- Docker & Docker Compose
-- Python 3.12+ (for local development)
-- PostgreSQL 15+ (if running outside Docker)
-- Redis 7+ (if running outside Docker)
+- Docker & Docker Compose, or
+- Python 3.12+, [uv](https://docs.astral.sh/uv/), PostgreSQL 15+ and Redis 7+ for local development
 
-### 1. Clone & Setup
+### 1. Clone and configure
 
 ```bash
 git clone https://github.com/JakubD02/fare-hunter.git
 cd fare-hunter
 
-# Create .env from template
 cp .env.example .env
-
-# Edit .env with your required keys:
-# - DATABASE_URL (postgresql+psycopg2://postgres:postgres@db:5432/fare_hunter)
-# - REDIS_URL (redis://redis:6379/0)
-# - JWT_SECRET_KEY (generate: python -c "import secrets; print(secrets.token_urlsafe(32))")
-# - SERPAPI_KEY (from https://serpapi.com)
-# - SENDGRID_API_KEY (from https://sendgrid.com)
-# - APP_URL (http://localhost:8000 for local)
 ```
 
-### 2. Start Docker Containers
+Fill in `.env` (see [Configuration](#️-configuration)). To generate a JWT secret:
 
 ```bash
-# Build images
-docker-compose build
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
 
-# Start all services (app, worker, beat, postgres, redis)
-docker-compose up -d
+### 2a. Run with Docker
 
-# Wait 20 seconds for database to initialize
-sleep 20
-
-# Check logs
+```bash
+docker-compose up -d --build
 docker-compose logs app | tail -30
 ```
 
-### 3. Test the API
+### 2b. Run locally
 
 ```bash
-# Register a user
+uv sync
+uv run alembic upgrade head
+uv run python scripts/init_db.py    # TODO: check the exact command for seeding
+uv run uvicorn app.main:app --reload
+```
+
+### 3. Try the API
+
+Swagger UI: http://localhost:8000/docs
+
+```bash
+# Register
 curl -X POST http://localhost:8000/auth/register \
   -H 'Content-Type: application/json' \
-  -d '{
-    "first_name": "John",
-    "email": "john@example.com",
-    "password": "SecurePass123!"
-  }'
+  -d '{"first_name": "John", "email": "john@example.com", "password": "SecurePass123!"}'
 
-# Response:
-# {
-#   "id": "uuid",
-#   "email": "john@example.com",
-#   "first_name": "John",
-#   "is_active": true,
-#   "created_at": "2026-09-23T..."
-# }
-
-# Login & get token
+# Login
 curl -X POST http://localhost:8000/auth/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'username=john@example.com&password=SecurePass123!'
 
-# Response:
-# {
-#   "access_token": "eyJ...",
-#   "refresh_token": "eyJ...",
-#   "token_type": "bearer"
-# }
+# Current user
+curl http://localhost:8000/auth/me -H "Authorization: Bearer $TOKEN"
 
-# Save token
-TOKEN="eyJ..."
-
-# Get current user
-curl -X GET http://localhost:8000/auth/me \
-  -H "Authorization: Bearer $TOKEN"
-
-# List airports (no auth required)
-curl -X GET http://localhost:8000/airports
-
-# List airlines (no auth required)
-curl -X GET http://localhost:8000/airlines
+# Reference data (no auth)
+curl http://localhost:8000/airports
+curl http://localhost:8000/airlines
 ```
-
-Open **Swagger UI**: http://localhost:8000/docs
 
 ---
 
 ## 📱 API Endpoints
 
+> TODO: verify paths against the routers in `app/api/v1/endpoints/routers/`. Routes below come from the previous README and the tests.
+
 ### Authentication
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/auth/register` | Register new user |
-| POST | `/auth/token` | Login, get access + refresh tokens |
-| GET | `/auth/me` | Get current user (requires auth) |
+| POST | `/auth/register` | Register a new user |
+| POST | `/auth/token` | Login, get access and refresh tokens |
+| GET | `/auth/me` | Current user (auth required) |
 
-### Routes (Flight Tracking)
+### Routes
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/routes/` | List user's routes (requires auth) |
-| POST | `/routes/` | Create new route (requires auth) |
-| GET | `/routes/{route_id}` | Get route details (requires auth) |
-| PATCH | `/routes/{route_id}` | Update route (requires auth) |
-| DELETE | `/routes/{route_id}` | Delete route (requires auth) |
+| GET | `/routes/` | List the user's routes (auth required) |
+| POST | `/routes/` | Create a route (auth required) |
+| GET | `/routes/{route_id}` | Route details (auth required) |
+| PATCH | `/routes/{route_id}` | Update a route (auth required) |
+| DELETE | `/routes/{route_id}` | Delete a route (auth required) |
+| GET | `/routes/{route_id}/stats` | Price statistics for a route (auth required) |
 
-**Create Route Request:**
+**Create route request:**
+
 ```json
 {
   "origin_id": 1,
@@ -228,17 +228,18 @@ Open **Swagger UI**: http://localhost:8000/docs
 }
 ```
 
-**Note:** Use airport `id` from `/airports` endpoint, not IATA codes.
+Use airport `id` values from `/airports`, not IATA codes.
 
-### Price Alerts
+### Price alerts
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/{route_id}/alert` | Get alert for route (requires auth) |
-| PUT | `/{route_id}/alert` | Create or update alert (requires auth) |
-| DELETE | `/{route_id}/alert` | Delete alert (requires auth) |
+| GET | `/{route_id}/alert` | Get the alert for a route (auth required) |
+| PUT | `/{route_id}/alert` | Create or update the alert (auth required) |
+| DELETE | `/{route_id}/alert` | Delete the alert (auth required) |
 
-**Create/Update Alert Request:**
+**Create or update alert request:**
+
 ```json
 {
   "threshold_price": 500,
@@ -246,32 +247,20 @@ Open **Swagger UI**: http://localhost:8000/docs
 }
 ```
 
-### Reference Data
+### Reference data
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/airports` | List all airports |
-| GET | `/airlines` | List all airlines |
+| GET | `/airports` | List airports |
+| GET | `/airlines` | List airlines |
 
-**Airport Response:**
-```json
-[
-  {
-    "id": 1,
-    "iata_code": "JFK",
-    "name": "John F. Kennedy International",
-    "city": "New York",
-    "country": "United States",
-    "country_code": "US"
-  }
-]
-```
+> TODO: add the endpoints from `currency.py`.
 
 ---
 
 ## ⚙️ Configuration
 
-All settings are managed via environment variables in `.env`:
+Environment variables are loaded from `.env` by `app/core/config.py`:
 
 ```bash
 # Database
@@ -286,223 +275,127 @@ JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=15
 REFRESH_TOKEN_EXPIRE_DAYS=7
 
-# Email (SendGrid)
-SENDGRID_API_KEY=SG.xxxxxxxx
-FROM_EMAIL=norply@farehunter.app
-
-# Flight Data (SerpAPI)
+# SerpAPI
 SERPAPI_KEY=your-serpapi-key
+SERPAPI_URL=https://serpapi.com/api
+
+# SendGrid
+SENDGRID_API_KEY=SG.xxxxxxxx
+FROM_EMAIL=noreply@farehunter.app
+APP_URL=http://localhost:8000
 
 # App
-APP_URL=http://localhost:8000
 APP_ENV=development
 LOG_LEVEL=DEBUG
+```
+
+Fixed domain limits (name lengths, IATA/ICAO code lengths, password limits, etc.) are **not** environment variables. They live in `app/core/constants.py`:
+
+```python
+from app.core.constants import airline_config, user_config
+
+airline_config.iata_code_length   # 2
+user_config.password_max_length   # 72
 ```
 
 ---
 
 ## 🔄 How It Works
 
-### 1. User Creates a Route
+### 1. A user creates a route
 
-```bash
-curl -X POST http://localhost:8000/routes/ \
-  -H "Authorization: Bearer $TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "origin_id": 1,
-    "destination_id": 2,
-    "departure_date": "2026-12-25",
-    "return_date": "2026-12-31"
-  }'
-```
+- The route is saved in the database.
+- A Celery task `fetch_prices_for_route` is queued.
+- The worker calls SerpAPI and saves the results as `FlightPrice` records.
 
-**Behind the scenes:**
-- ✅ Route created in DB
-- ✅ Celery task `fetch_prices_for_route(route_id)` queued immediately
-- Worker picks it up → calls SerpAPI → saves FlightPrice
+### 2. A user sets a price alert
 
-### 2. User Sets a Price Alert
+- The alert is created or updated.
+- A confirmation email task is queued and the worker sends it through SendGrid.
 
-```bash
-curl -X PUT http://localhost:8000/1/alert \
-  -H "Authorization: Bearer $TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "threshold_price": 500,
-    "is_active": true
-  }'
-```
+### 3. Celery Beat runs every 8 hours
 
-**Behind the scenes:**
-- ✅ Alert created/updated in DB
-- ✅ Celery task `send_alert_confirmation_email_task` queued
-- Worker sends confirmation email via SendGrid
-
-### 3. Celery Beat Scheduler Runs Every 8 Hours
-
-Every 8 hours (3 times/day), Celery Beat:
-1. Triggers `fetch_all_prices_periodic` task
-2. Worker fetches prices for all routes with active alerts
-3. If price < threshold: `send_price_drop_email_task` queued
-4. Worker sends notification email to user
-
----
-
-## 🔍 Code Quality & Type Safety
-
-### Type Checking with MyPy
-
-We use **MyPy** for static type checking to ensure code correctness:
-
-```bash
-# Run type checker
-uv run mypy app
-
-# Type check specific file
-uv run mypy app/services/routes_service.py
-```
-
-### Code Formatting & Linting
-
-```bash
-# Format code with Black
-uv run black app tests
-
-# Lint with Ruff
-uv run ruff check app tests
-```
+1. `fetch_all_prices_periodic` runs.
+2. Prices are fetched for routes with active alerts.
+3. If a price is below the threshold, a price-drop email task is queued.
 
 ---
 
 ## 🧪 Testing
 
-Run tests locally:
-
 ```bash
-# Install uv (if not already installed)
-pip install uv
-
-# Install all dependencies (including dev)
 uv sync
-
-# Run all tests
-uv run pytest
-
-# Run specific test
-uv run pytest tests/auth/test_register.py -v
-
-# Run with coverage
-uv run pytest --cov=app tests/
+uv run pytest                          # all tests
+uv run pytest tests/auth -v            # one directory
+uv run pytest --cov=app tests/         # with coverage
 ```
 
-**Test Structure:**
-- `tests/auth/` - Login, registration, JWT
-- `tests/routes/` - Create, list, update, delete routes
-- `tests/alerts/` - Alert CRUD
+---
 
-### Type Checking
+## 🔍 Code Quality
 
 ```bash
-# Check types with MyPy
-uv run mypy app
+uv run mypy app                        # type checking
+uv run ruff check .                    # linting
+uv run ruff check . --fix              # auto-fix lint issues
+uv run ruff format .                   # formatting
 ```
+
+CI runs the tests and checks defined in `.github/workflows/`.
 
 ---
 
 ## 🐳 Docker Commands
 
 ```bash
-# Start all services
-docker-compose up -d
-
-# Stop all services
-docker-compose down
-
-# Remove volumes (clean slate)
-docker-compose down -v
-
-# Rebuild images
-docker-compose build
-
-# View logs
-docker-compose logs app          # FastAPI logs
-docker-compose logs worker       # Celery worker logs
-docker-compose logs beat         # Celery Beat logs
-docker-compose logs db           # PostgreSQL logs
-
-# Access database
+docker-compose up -d                   # start all services
+docker-compose down                    # stop
+docker-compose down -v                 # stop and remove volumes
+docker-compose build                   # rebuild images
+docker-compose logs app                # API logs
+docker-compose logs worker             # Celery worker logs
+docker-compose logs beat               # Celery Beat logs
 docker-compose exec db psql -U postgres -d fare_hunter
+```
 
-# Query tables
-docker-compose exec db psql -U postgres -d fare_hunter -c "SELECT * FROM airports;"
-docker-compose exec db psql -U postgres -d fare_hunter -c "SELECT * FROM routes;"
-docker-compose exec db psql -U postgres -d fare_hunter -c "SELECT * FROM price_alerts;"
+---
+
+## 🗄️ Database Migrations
+
+Schema changes go through Alembic:
+
+```bash
+uv run alembic revision --autogenerate -m "describe the change"
+uv run alembic upgrade head
+uv run alembic downgrade -1
 ```
 
 ---
 
 ## 🔐 Security
 
-- **Passwords** - Hashed with bcrypt (via passlib)
-- **JWT Tokens** - HS256 algorithm, 15-min expiry (access), 7-day expiry (refresh)
-- **Database** - All models use SQLAlchemy ORM (SQL injection safe)
-- **Validation** - Pydantic v2 models validate all input
-- **CORS** - Can be enabled in `app/main.py` if needed
-
----
-
-## 📊 Database Schema
-
-### users
-```sql
-id (UUID, PK) | first_name | email (UNIQUE) | password_hash | is_active | created_at
-```
-
-### airports
-```sql
-id (INT, PK) | iata_code (UNIQUE) | name | city | country | country_code
-```
-
-### airlines
-```sql
-id (INT, PK) | iata_code (UNIQUE) | name
-```
-
-### routes
-```sql
-id (INT, PK) | user_id (FK→users) | origin_id (FK→airports) | destination_id (FK→airports) | 
-departure_date | return_date | is_active | created_at
-```
-
-### flight_prices
-```sql
-id (INT, PK) | route_id (FK→routes) | airline_id (FK→airlines) | price | currency | 
-departure_date | return_date | fetched_at
-```
-
-### price_alerts
-```sql
-id (INT, PK) | route_id (FK→routes, UNIQUE) | threshold_price | currency | is_active | last_notified_at
-```
+- **Passwords** are hashed with bcrypt (passlib).
+- **JWT**: HS256, 15-minute access tokens, 7-day refresh tokens.
+- **Database access** goes through SQLAlchemy ORM.
+- **Input validation** uses Pydantic v2 models.
+- **Static security checks** run in CI (Bandit).
 
 ---
 
 ## 🚧 Roadmap
 
-### Current (Sept 2026)
-- [x] User authentication (JWT)
+- [x] JWT authentication
 - [x] Route CRUD
-- [x] Airport/airline reference data
-- [x] Price alert system
+- [x] Airport and airline reference data
+- [x] Price alerts
+- [x] Currency conversion for alerts
+- [x] Route statistics
 - [x] Email notifications (SendGrid)
 - [x] Celery background jobs
-- [x] Docker containerization
-- [x] Database initialization with seed data
-
-### Next Phase
+- [x] Docker Compose setup
+- [x] Repository layer and Alembic migrations
 - [ ] Advanced analytics (price trends, best time to buy)
-- [ ] Multiple alert types (price drop, availability, schedule changes)
+- [ ] Multiple alert types (availability, schedule changes)
 - [ ] Deployment to Heroku/AWS
 
 ---
@@ -510,11 +403,9 @@ id (INT, PK) | route_id (FK→routes, UNIQUE) | threshold_price | currency | is_
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Commit changes (`git commit -am 'Add my feature'`)
-4. Push to branch (`git push origin feature/my-feature`)
-5. Open a Pull Request
-
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit your changes
+4. Push the branch and open a Pull Request
 
 ---
 
