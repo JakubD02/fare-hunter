@@ -13,12 +13,16 @@ class TestGetStats:
 
         assert response.status_code == 200
         stats = response.json()
+
+        assert stats["sample_count"] > 0
+        assert stats["currency"] == "EUR"
+        assert Decimal(stats["min_price"]) == Decimal("100")
+        assert Decimal(stats["max_price"]) == Decimal("140")
+
+        assert "sample_count" in stats
         assert "min_price" in stats
         assert "max_price" in stats
         assert "avg_price" in stats
-        assert "currency" in stats
-        assert Decimal(stats["min_price"]) == Decimal(str(100))
-        assert Decimal(stats["max_price"]) == Decimal(str(140))
 
     def test_get_stats_no_history(self, client, registered_user, created_route):
         """Get stats for route without price history"""
@@ -73,8 +77,8 @@ class TestGetHistory:
         history = response.json()
         assert len(history) == 5
         assert all("price" in record for record in history)
-        assert all("currency" in record for record in history)
         assert all("fetched_at" in record for record in history)
+        assert all("currency" in record for record in history)
 
     def test_get_history_empty(self, client, registered_user, created_route):
         """Get history for route without prices"""

@@ -33,23 +33,36 @@ class FlightPriceService:
         logger.debug("history loaded route_id=%s rows=%d", route_id, len(history))
         return history
 
-    def get_stats(self, user: User, route_id: str, days: int = 30) -> dict | None:
+    def get_stats(
+        self, user: User, route_id: str, days: int = 30, preferred_currency: str | None = None
+    ) -> dict | None:
         if self._routes.get_route(user, route_id) is None:
             logger.warning("stats rejected: route not found route_id=%s user_id=%s", route_id, user.id)
             return None
 
         since = datetime.now(timezone.utc) - timedelta(days=days)
-        aggregates = self._prices.aggregate_since(route_id, since)
-        logger.debug("stats computed route_id=%s days=%d samples=%d", route_id, days, aggregates["sample_count"])
+        by_currency = self._prices.aggregate_since(route_id, since)
+        logger.debug(
+            "stats computed route_id=%s days=%d currencies=%d",
+            route_id,
+            days,
+            len(by_currency),
+        )
+
+        if preferred_currency is not None:
+            by_currency.sort(key=lambda row: row["currency"] != preferred_currency)
+
+        primary = by_currency[0] if by_currency else None
 
         return {
             "route_id": route_id,
             "period_days": days,
-            "sample_count": aggregates["sample_count"],
-            "currency": self._prices.latest_currency(route_id),
-            "min_price": aggregates["min_price"],
-            "max_price": aggregates["max_price"],
-            "avg_price": aggregates["avg_price"],
+            "currency": primary["currency"] if primary else None,
+            "sample_count": primary["sample_count"] if primary else 0,
+            "min_price": primary["min_price"] if primary else None,
+            "max_price": primary["max_price"] if primary else None,
+            "avg_price": primary["avg_price"] if primary else None,
+            "by_currency": by_currency,
         }
 
     def refresh_prices(self, user: User, route_id: str) -> list[FlightPrice] | None:
@@ -79,12 +92,26 @@ class FlightPriceService:
             logger.warning("refresh got no offers route_id=%s", route_id)
             return []
 
-        return [self._prices.add(self._to_price(route_id, offer)) for offer in offers]
+        saved: list[FlightPrice] = []
+        for offer in offers:
+            try:
+                price = self._to_price(route_id, offer)
+                if price is None:
+                    continue
+                saved.append(self._prices.add(price))
+            except Exception:
+                logger.exception(
+                    "failed to save offer airline=%s route_id=%s",
+                    offer.get("airline"),
+                    route_id,
+                )
+        return saved
 
-    def _to_price(self, route_id: str, offer: FlightOffer) -> FlightPrice:
+    def _to_price(self, route_id: str, offer: FlightOffer) -> FlightPrice | None:
         airline_id = self._airlines.find_id(offer["airline"])
         if airline_id is None:
             logger.warning("unknown airline in offer airline=%s route_id=%s", offer["airline"], route_id)
+            return None
         return FlightPrice(
             route_id=route_id,
             airline_id=airline_id,

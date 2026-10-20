@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
+from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator, model_validator
 
 
 def validate_departure_date(val: date) -> date:
@@ -56,6 +56,15 @@ class RouteUpdate(BaseModel):
         if value is None:
             raise ValueError("Departure date cannot be null")
         return validate_departure_date(value)
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_null_values(cls, data):
+        if isinstance(data, dict):
+            for field, value in data.items():
+                if value is None:
+                    raise ValueError(f"{field} cannot be null")
+        return data
 
 
 class RouteRead(RouteFields):

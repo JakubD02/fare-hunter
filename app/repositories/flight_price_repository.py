@@ -29,14 +29,20 @@ class FlightPriceRepository:
         )
         return self._db.execute(query).scalar_one_or_none()
 
-    def aggregate_since(self, route_id: str, since: datetime) -> dict:
-        query = select(
-            func.min(FlightPrice.price).label("min_price"),
-            func.max(FlightPrice.price).label("max_price"),
-            func.avg(FlightPrice.price).label("avg_price"),
-            func.count(FlightPrice.price).label("sample_count"),
-        ).where(
-            FlightPrice.route_id == route_id,
-            FlightPrice.fetched_at >= since,
+    def aggregate_since(self, route_id: str, since: datetime) -> list[dict]:
+        query = (
+            select(
+                FlightPrice.currency.label("currency"),
+                func.min(FlightPrice.price).label("min_price"),
+                func.max(FlightPrice.price).label("max_price"),
+                func.avg(FlightPrice.price).label("avg_price"),
+                func.count(FlightPrice.price).label("sample_count"),
+            )
+            .where(
+                FlightPrice.route_id == route_id,
+                FlightPrice.fetched_at >= since,
+            )
+            .group_by(FlightPrice.currency)
+            .order_by(FlightPrice.currency)
         )
-        return dict(self._db.execute(query).one()._mapping)
+        return [dict(row._mapping) for row in self._db.execute(query)]
