@@ -2,27 +2,29 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.constants.user import (
-    EMAIL_MAX_LENGTH,
-    FIRST_NAME_MAX_LENGTH,
-    FIRST_NAME_MIN_LENGTH,
-    PASSWORD_MAX_LENGTH,
-    PASSWORD_MIN_LENGTH,
-)
+from app.core.config import settings
 
 
 class UserBase(BaseModel):
-    first_name: str = Field(min_length=FIRST_NAME_MIN_LENGTH, max_length=FIRST_NAME_MAX_LENGTH)
-    email: EmailStr = Field(max_length=EMAIL_MAX_LENGTH)
+    first_name: str = Field(
+        min_length=settings.user_config.first_name_min_length, max_length=settings.user_config.first_name_max_length
+    )
+    email: EmailStr = Field(max_length=settings.user_config.email_max_length)
 
 
 class UserCreate(UserBase):
-    password: str = Field(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
+    password: str = Field(
+        min_length=settings.user_config.password_min_length, max_length=settings.user_config.password_max_length
+    )
 
 
 class UserUpdate(BaseModel):
-    first_name: str | None = Field(default=None, min_length=FIRST_NAME_MIN_LENGTH, max_length=FIRST_NAME_MAX_LENGTH)
-    email: EmailStr | None = Field(default=None, max_length=EMAIL_MAX_LENGTH)
+    first_name: str | None = Field(
+        default=None,
+        min_length=settings.user_config.first_name_min_length,
+        max_length=settings.user_config.first_name_max_length,
+    )
+    email: EmailStr | None = Field(default=None, max_length=settings.user_config.email_max_length)
 
 
 class UserRead(UserBase):

@@ -3,12 +3,7 @@ import random
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
-from app.constants.mock import (
-    MOCK_NUM_RESULTS,
-    MOCK_PRICE_MAX,
-    MOCK_PRICE_MIN,
-    MOCK_TOTAL_GENERATED,
-)
+from app.core.config import settings
 from app.enums.currency import Currency
 from app.services.flight_price_service import FlightOffer
 
@@ -41,19 +36,19 @@ class SerpApiMockClient:
                 departure_date=departure_date,
                 return_date=return_date,
             )
-            for _ in range(MOCK_TOTAL_GENERATED)
+            for _ in range(settings.mock.mock_total_generated)
         ]
 
         offers.sort(key=lambda offer: offer["price"])
-        result = offers[:MOCK_NUM_RESULTS]
+        result = offers[: settings.mock.mock_num_results]
         logger.debug(
             "mock generated=%d returned=%d cheapest=%s",
-            MOCK_TOTAL_GENERATED,
+            settings.mock.mock_total_generated,
             len(result),
             result[0]["price"] if result else None,
         )
         return result
 
     def _random_price(self) -> Decimal:
-        raw = self._rng.uniform(MOCK_PRICE_MIN, MOCK_PRICE_MAX)
+        raw = self._rng.uniform(settings.mock.mock_price_min, settings.mock.mock_price_max)
         return Decimal(str(raw)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)

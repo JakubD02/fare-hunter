@@ -8,10 +8,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.constants.price import (
-    PRICE_DECIMAL_PLACES,
-    PRICE_MAX_DIGITS,
-)
+from app.core.config import settings
 from app.enums.currency import Currency
 from app.models.base import BaseModel
 
@@ -20,7 +17,9 @@ class PriceAlert(BaseModel):
     __tablename__ = "price_alerts"
 
     route_id: Mapped[str] = mapped_column(ForeignKey("routes.id", ondelete="CASCADE"), unique=True, nullable=False)
-    threshold_price: Mapped[Decimal] = mapped_column(Numeric(PRICE_MAX_DIGITS, PRICE_DECIMAL_PLACES), nullable=False)
+    threshold_price: Mapped[Decimal] = mapped_column(
+        Numeric(settings.price.price_max_digits, settings.price.price_decimal_places), nullable=False
+    )
     currency: Mapped[Currency] = mapped_column(SqlEnum(Currency), default=Currency.PLN, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     last_notified_at: Mapped[datetime | None] = mapped_column()

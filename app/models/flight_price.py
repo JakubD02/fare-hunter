@@ -9,10 +9,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.constants.price import (
-    PRICE_DECIMAL_PLACES,
-    PRICE_MAX_DIGITS,
-)
+from app.core.config import settings
 from app.enums.currency import Currency
 from app.models.base import IdModel
 
@@ -22,7 +19,9 @@ class FlightPrice(IdModel):
 
     route_id: Mapped[str] = mapped_column(ForeignKey("routes.id", ondelete="CASCADE"), nullable=False, index=True)
     airline_id: Mapped[str] = mapped_column(ForeignKey("airlines.id"), nullable=False)
-    price: Mapped[Decimal] = mapped_column(Numeric(PRICE_MAX_DIGITS, PRICE_DECIMAL_PLACES), nullable=False)
+    price: Mapped[Decimal] = mapped_column(
+        Numeric(settings.price.price_max_digits, settings.price.price_decimal_places), nullable=False
+    )
     currency: Mapped[Currency] = mapped_column(SqlEnum(Currency), default=Currency.PLN, nullable=False)
     departure_date: Mapped[date] = mapped_column(nullable=False)
     return_date: Mapped[date | None] = mapped_column()

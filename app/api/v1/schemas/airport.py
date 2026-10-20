@@ -1,23 +1,18 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.constants.airport import (
-    CITY_MAX_LENGTH,
-    CITY_MIN_LENGTH,
-    COUNTRY_CODE_LENGTH,
-    COUNTRY_MAX_LENGTH,
-    COUNTRY_MIN_LENGTH,
-    IATA_CODE_LENGTH,
-    NAME_MAX_LENGTH,
-    NAME_MIN_LENGTH,
-)
+from app.core.config import settings
 
 
 class AirportBase(BaseModel):
-    iata_code: str = Field(min_length=IATA_CODE_LENGTH, max_length=IATA_CODE_LENGTH)
-    name: str = Field(min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
-    city: str = Field(min_length=CITY_MIN_LENGTH, max_length=CITY_MAX_LENGTH)
-    country: str = Field(min_length=COUNTRY_MIN_LENGTH, max_length=COUNTRY_MAX_LENGTH)
-    country_code: str = Field(min_length=COUNTRY_CODE_LENGTH, max_length=COUNTRY_CODE_LENGTH)
+    iata_code: str = Field(min_length=settings.airports.iata_code_length, max_length=settings.airports.iata_code_length)
+    name: str = Field(min_length=settings.airports.name_min_length, max_length=settings.airports.name_max_length)
+    city: str = Field(min_length=settings.airports.city_min_length, max_length=settings.airports.city_max_length)
+    country: str = Field(
+        min_length=settings.airports.country_min_length, max_length=settings.airports.country_max_length
+    )
+    country_code: str = Field(
+        min_length=settings.airports.country_code_length, max_length=settings.airports.country_code_length
+    )
 
     @field_validator("iata_code", "country_code")
     @classmethod
@@ -35,11 +30,21 @@ class AirportCreate(AirportBase):
 
 
 class AirportUpdate(BaseModel):
-    iata_code: str | None = Field(default=None, min_length=IATA_CODE_LENGTH, max_length=IATA_CODE_LENGTH)
-    name: str | None = Field(default=None, min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
-    city: str | None = Field(default=None, min_length=CITY_MIN_LENGTH, max_length=CITY_MAX_LENGTH)
-    country: str | None = Field(default=None, min_length=COUNTRY_MIN_LENGTH, max_length=COUNTRY_MAX_LENGTH)
-    country_code: str | None = Field(default=None, min_length=COUNTRY_CODE_LENGTH, max_length=COUNTRY_CODE_LENGTH)
+    iata_code: str | None = Field(
+        default=None, min_length=settings.airports.iata_code_length, max_length=settings.airports.iata_code_length
+    )
+    name: str | None = Field(
+        default=None, min_length=settings.airports.name_min_length, max_length=settings.airports.name_max_length
+    )
+    city: str | None = Field(
+        default=None, min_length=settings.airports.city_min_length, max_length=settings.airports.city_max_length
+    )
+    country: str | None = Field(
+        default=None, min_length=settings.airports.country_min_length, max_length=settings.airports.country_max_length
+    )
+    country_code: str | None = Field(
+        default=None, min_length=settings.airports.country_code_length, max_length=settings.airports.country_code_length
+    )
 
     @field_validator("iata_code", "country_code")
     @classmethod

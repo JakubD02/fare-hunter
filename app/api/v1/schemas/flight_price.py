@@ -3,15 +3,15 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.constants.price import PRICE_DECIMAL_PLACES, PRICE_MAX_DIGITS, PRICE_MIN_VALUE
+from app.core.config import settings
 from app.enums.currency import Currency
 
 
 class FlightPriceBase(BaseModel):
     price: Decimal = Field(
-        ge=PRICE_MIN_VALUE,
-        max_digits=PRICE_MAX_DIGITS,
-        decimal_places=PRICE_DECIMAL_PLACES,
+        ge=settings.price.price_min_value,
+        max_digits=settings.price.price_max_digits,
+        decimal_places=settings.price.price_decimal_places,
     )
     currency: Currency = Currency.PLN
     departure_date: date

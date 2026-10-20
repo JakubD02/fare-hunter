@@ -1,16 +1,12 @@
 # app/schemas/airline.py
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.constants.airline import (
-    IATA_CODE_LENGTH,
-    NAME_MAX_LENGTH,
-    NAME_MIN_LENGTH,
-)
+from app.core.config import settings
 
 
 class AirlineBase(BaseModel):
-    iata_code: str = Field(min_length=IATA_CODE_LENGTH, max_length=IATA_CODE_LENGTH)
-    name: str = Field(min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
+    iata_code: str = Field(min_length=settings.airline.iata_code_length, max_length=settings.airline.iata_code_length)
+    name: str = Field(min_length=settings.airline.name_min_length, max_length=settings.airline.name_max_length)
 
     @field_validator("iata_code")
     @classmethod
@@ -28,8 +24,12 @@ class AirlineCreate(AirlineBase):
 
 
 class AirlineUpdate(BaseModel):
-    iata_code: str | None = Field(default=None, min_length=IATA_CODE_LENGTH, max_length=IATA_CODE_LENGTH)
-    name: str | None = Field(default=None, min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
+    iata_code: str | None = Field(
+        default=None, min_length=settings.airline.iata_code_length, max_length=settings.airline.iata_code_length
+    )
+    name: str | None = Field(
+        default=None, min_length=settings.airline.name_min_length, max_length=settings.airline.name_max_length
+    )
 
     @field_validator("iata_code")
     @classmethod
