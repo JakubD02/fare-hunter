@@ -294,8 +294,8 @@ Fixed domain limits (name lengths, IATA/ICAO code lengths, password limits, etc.
 ```python
 from app.core.constants import airline_config, user_config
 
-airline_config.iata_code_length   # 2
-user_config.password_max_length   # 72
+airline_config.iata_code_length  # 2
+user_config.password_max_length  # 72
 ```
 
 ---
