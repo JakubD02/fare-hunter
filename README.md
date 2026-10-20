@@ -68,7 +68,6 @@ fare-hunter/
 │   │           └── user.py
 │   ├── core/
 │   │   ├── config.py                  # Settings loaded from environment (.env)
-│   │   ├── constants.py               # Domain constants as frozen Pydantic models
 │   │   ├── database.py                # Engine, session, get_db
 │   │   ├── exceptions.py
 │   │   └── security.py                # JWT and password helpers
