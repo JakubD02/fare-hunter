@@ -1,30 +1,23 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict
 
-from app.core.config import settings
+from app.api.v1.schemas.base import UpdateSchemaBase
+from app.api.v1.schemas.types import Email, FirstName, Password
 
 
 class UserBase(BaseModel):
-    first_name: str = Field(
-        min_length=settings.user_config.first_name_min_length, max_length=settings.user_config.first_name_max_length
-    )
-    email: EmailStr = Field(max_length=settings.user_config.email_max_length)
+    first_name: FirstName
+    email: Email
 
 
 class UserCreate(UserBase):
-    password: str = Field(
-        min_length=settings.user_config.password_min_length, max_length=settings.user_config.password_max_length
-    )
+    password: Password
 
 
-class UserUpdate(BaseModel):
-    first_name: str | None = Field(
-        default=None,
-        min_length=settings.user_config.first_name_min_length,
-        max_length=settings.user_config.first_name_max_length,
-    )
-    email: EmailStr | None = Field(default=None, max_length=settings.user_config.email_max_length)
+class UserUpdate(UpdateSchemaBase):
+    first_name: FirstName | None = None
+    email: Email | None = None
 
 
 class UserRead(UserBase):
