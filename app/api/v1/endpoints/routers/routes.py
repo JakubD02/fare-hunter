@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app.api.auth import CurrentUser
+from app.api.v1.dependencies import PaginationDep
 from app.api.v1.schemas.route import RouteCreate, RouteRead, RouteUpdate
 from app.core.database import get_db
 from app.repositories.airport_repository import AirportRepository
@@ -19,9 +20,9 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 
 @router.get("/", response_model=list[RouteRead])
-def list_routes(db: db_dependency, current_user: CurrentUser):
+def list_routes(db: db_dependency, current_user: CurrentUser, page: PaginationDep):
     service = RouteService(routes=RouteRepository(db), airports=AirportRepository(db))
-    return service.list_routes(user=current_user)
+    return service.list_routes(user=current_user, limit=page.limit, offset=page.offset)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=RouteRead)

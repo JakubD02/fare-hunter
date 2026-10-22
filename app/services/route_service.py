@@ -15,9 +15,9 @@ class RouteService:
         self._routes = routes
         self._airports = airports
 
-    def list_routes(self, user: User) -> list[Route]:
-        routes = self._routes.list_for_user(user)
-        logger.debug("routes listed user_id=%s count=%d", user.id, len(routes))
+    def list_routes(self, user: User, limit: int, offset: int) -> list[Route]:
+        routes = self._routes.list_for_user(user, limit=limit, offset=offset)
+        logger.debug("routes listed count=%d limit=%d offset=%d", len(routes), limit, offset)
         return routes
 
     def get_route(self, user: User, route_id: str) -> Route | None:

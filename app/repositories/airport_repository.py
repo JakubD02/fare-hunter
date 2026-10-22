@@ -11,6 +11,6 @@ class AirportRepository:
     def get_by_id(self, airport_id: str) -> Airport | None:
         return self._db.get(Airport, airport_id)
 
-    def list_all(self) -> list[Airport]:
-        query = select(Airport).order_by(Airport.name)
-        return list(self._db.scalars(query).all())
+    def list_all(self, limit: int, offset: int) -> list[Airport]:
+        stmt = select(Airport).order_by(Airport.iata_code).limit(limit).offset(offset)
+        return list(self._db.execute(stmt).scalars())

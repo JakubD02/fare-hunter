@@ -73,6 +73,16 @@ class UserConfig(BaseModel):
     password_hash_max_length: int = 255
 
 
+class PaginationConfig(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    default_limit: int = 20
+    max_limit: int = 100
+    min_limit: int = 1
+    default_offset: int = 0
+    min_offset: int = 0
+
+
 class Settings(BaseSettings):
     # database
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./fare_hunter.db")
@@ -92,6 +102,7 @@ class Settings(BaseSettings):
     mock: MockConfig = MockConfig()
     price: PriceConfig = PriceConfig()
     user_config: UserConfig = UserConfig()
+    pagination: PaginationConfig = PaginationConfig()
 
     # serpapi
     SERPAPI_KEY: str

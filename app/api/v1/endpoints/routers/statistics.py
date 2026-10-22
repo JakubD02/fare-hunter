@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app.api.auth import CurrentUser
+from app.api.v1.dependencies import PaginationDep
 from app.api.v1.schemas.flight_price import FlightPriceRead, FlightStats
 from app.core.database import get_db
 from app.repositories.airline_repository import AirlineRepository
@@ -39,8 +40,8 @@ def get_stats(route_id: str, db: db_dependency, user: CurrentUser) -> FlightStat
 
 
 @router.get("/{route_id}/history", response_model=list[FlightPriceRead])
-def get_history(route_id: str, db: db_dependency, user: CurrentUser) -> list[FlightPriceRead]:
-    history = _flight_price_service(db).get_history(user, route_id)
+def get_history(route_id: str, db: db_dependency, user: CurrentUser, page: PaginationDep) -> list[FlightPriceRead]:
+    history = _flight_price_service(db).get_history(user, route_id, limit=page.limit, offset=page.offset)
     if history is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")
     return [FlightPriceRead.model_validate(item) for item in history]

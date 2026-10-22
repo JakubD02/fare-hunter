@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import Annotated
 
+from fastapi import Query
 from pydantic import EmailStr, Field, StringConstraints
 
 from app.core.config import settings
@@ -108,4 +109,16 @@ Password = Annotated[
         min_length=settings.user_config.password_min_length,
         max_length=settings.user_config.password_max_length,
     ),
+]
+
+# --- Pagination ---
+
+Limit = Annotated[
+    int,
+    Query(ge=settings.pagination.min_limit, le=settings.pagination.max_limit),
+]
+
+Offset = Annotated[
+    int,
+    Query(ge=settings.pagination.min_offset),
 ]

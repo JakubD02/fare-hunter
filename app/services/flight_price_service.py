@@ -25,11 +25,11 @@ class FlightPriceService:
         self._routes = routes
         self._provider = provider
 
-    def get_history(self, user: User, route_id: str) -> list[FlightPrice] | None:
+    def get_history(self, user: User, route_id: str, limit: int, offset: int) -> list[FlightPrice] | None:
         if self._routes.get_route(user, route_id) is None:
             logger.warning("history rejected: route not found route_id=%s user_id=%s", route_id, user.id)
             return None
-        history = self._prices.list_for_route(route_id)
+        history = self._prices.list_for_route(route_id, limit=limit, offset=offset)
         logger.debug("history loaded route_id=%s rows=%d", route_id, len(history))
         return history
 

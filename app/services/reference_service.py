@@ -13,9 +13,9 @@ class ReferenceService:
         self._airports = airports
         self._airlines = airlines
 
-    def list_airports(self) -> list[Airport]:
-        airports = self._airports.list_all()
-        logger.debug("airports listed count=%d", len(airports))
+    def list_airports(self, limit: int, offset: int) -> list[Airport]:
+        airports = self._airports.list_all(limit=limit, offset=offset)
+        logger.debug("airports listed count=%d limit=%d offset=%d", len(airports), limit, offset)
         return airports
 
     def get_airport(self, airport_id: str) -> Airport:
@@ -30,9 +30,9 @@ class ReferenceService:
             raise LookupError(f"Airport with ID {airport_id} not found")
         return airport
 
-    def list_airlines(self) -> list[Airline]:
-        airlines = self._airlines.list_all()
-        logger.debug("airlines listed count=%d", len(airlines))
+    def list_airlines(self, limit: int, offset: int) -> list[Airline]:
+        airlines = self._airlines.list_all(limit=limit, offset=offset)
+        logger.debug("airlines listed count=%d limit=%d offset=%d", len(airlines), limit, offset)
         return airlines
 
     def find_airline_id(self, airline_name: str | None) -> str | None:

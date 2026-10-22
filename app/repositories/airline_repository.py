@@ -22,6 +22,6 @@ class AirlineRepository:
         )
         return self._db.execute(stmt).scalar_one_or_none()
 
-    def list_all(self) -> list[Airline]:
-        query = select(Airline).order_by(Airline.name)
-        return list(self._db.scalars(query).all())
+    def list_all(self, limit: int, offset: int) -> list[Airline]:
+        stmt = select(Airline).order_by(Airline.iata_code).limit(limit).offset(offset)
+        return list(self._db.execute(stmt).scalars())

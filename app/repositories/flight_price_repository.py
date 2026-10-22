@@ -16,8 +16,14 @@ class FlightPriceRepository:
         self._db.refresh(flight_price)
         return flight_price
 
-    def list_for_route(self, route_id: str) -> list[FlightPrice]:
-        query = select(FlightPrice).where(FlightPrice.route_id == route_id).order_by(FlightPrice.fetched_at.desc())
+    def list_for_route(self, route_id: str, limit: int, offset: int) -> list[FlightPrice]:
+        query = (
+            select(FlightPrice)
+            .where(FlightPrice.route_id == route_id)
+            .order_by(FlightPrice.fetched_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
         return list(self._db.scalars(query).all())
 
     def latest_currency(self, route_id: str) -> str | None:

@@ -13,8 +13,10 @@ class RouteRepository:
         query = select(Route).where(Route.user_id == user.id, Route.id == route_id).order_by(Route.created_at.desc())
         return self._db.execute(query).scalar_one_or_none()
 
-    def list_for_user(self, user: User) -> list[Route]:
-        query = select(Route).where(Route.user_id == user.id).order_by(Route.created_at.desc())
+    def list_for_user(self, user: User, limit: int, offset: int) -> list[Route]:
+        query = (
+            select(Route).where(Route.user_id == user.id).order_by(Route.created_at.desc()).limit(limit).offset(offset)
+        )
         return list(self._db.execute(query).scalars().all())
 
     def add(self, route: Route) -> Route:
