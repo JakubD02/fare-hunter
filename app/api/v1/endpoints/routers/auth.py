@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app.api.auth import CurrentUser
-from app.api.v1.schemas.token import AccessToken, TokenPair
+from app.api.v1.schemas.token import AccessToken, RefreshRequest, TokenPair
 from app.api.v1.schemas.user import UserCreate, UserRead
 from app.core.database import get_db
 from app.core.security import (
@@ -55,8 +55,8 @@ def register(user_in: UserCreate, db: db_dependency):
 
 
 @router.post("/refresh", response_model=AccessToken)
-def refresh(db: db_dependency, refresh_token: str):
-    access_token = _auth_service(db).refresh_access_token(refresh_token)
+def refresh(db: db_dependency, body: RefreshRequest):
+    access_token = _auth_service(db).refresh_access_token(body.refresh_token)
     if not access_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
