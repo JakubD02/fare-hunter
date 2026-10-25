@@ -1,9 +1,13 @@
 import logging
+from datetime import datetime
 
 from app.api.v1.schemas.price_alert import PriceAlertCreate, PriceAlertUpdate
+from app.models.flight_price import FlightPrice
 from app.models.price_alert import PriceAlert
+from app.models.route import Route
 from app.models.user import User
 from app.repositories.alert_repository import AlertRepository
+from app.services.alert_rules import should_notify
 from app.services.route_service import RouteService
 
 logger = logging.getLogger(__name__)
@@ -68,3 +72,13 @@ class AlertService:
         self._alerts.delete(alert)
         logger.info("alert removed id=%s route_id=%s user_id=%s", alert.id, route_id, user.id)
         return True
+
+    def check_price(self, route: Route, flight_price: FlightPrice, now: datetime) -> PriceAlert | None:
+        alert = self._alerts.get_active_by_route_id(route.id)
+        if alert is None:
+            return None
+        if not should_notify(alert, flight_price.price, flight_price.currency, route.currency, now):
+            return None
+
+        alert.last_notified_at = now
+        return alert

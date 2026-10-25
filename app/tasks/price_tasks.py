@@ -1,132 +1,109 @@
-# import logging
-# from decimal import Decimal
+import logging
+from datetime import datetime, timezone
+from decimal import Decimal
 
-# import httpx
-# from sqlalchemy import select
+import httpx
 
-# from app.celery_app import celery_app
-# from app.core.database import SessionLocal
-# from app.core.exceptions import TaskExecutionError
-# from app.enums.currency import Currency
-# from app.models.flight_price import FlightPrice
-# from app.models.price_alert import PriceAlert
-# from app.models.route import Route
-# from app.services import currency as currency_service
-# from app.services import reference_service
-# from app.services.flight_price_service import flight_price_service
-# from app.tasks.email_tasks import send_price_drop_email_task
+from app.celery_app import celery_app
+from app.core.config import settings
+from app.core.database import SessionLocal
+from app.models.flight_price import FlightPrice
+from app.repositories.airline_repository import AirlineRepository
+from app.repositories.airport_repository import AirportRepository
+from app.repositories.alert_repository import AlertRepository
+from app.repositories.route_repository import RouteRepository
+from app.repositories.user_repository import UserRepository
+from app.services.alert_service import AlertService
+from app.services.reference_service import ReferenceService
+from app.services.route_service import RouteService
+from app.services.serpapi_provider import SerpApiFlightProvider
 
-# logger = logging.getLogger(__name__)
-
-
-# @celery_app.task(bind=True)
-# def fetch_prices_for_route(self, route_id: str) -> int:
-#     db = SessionLocal()
-#     try:
-#         stmt = select(Route).where(Route.id == route_id)
-#         route = db.execute(stmt).scalar_one_or_none()
-#         if not route:
-#             return 0
-
-#         price_data = flight_price_service.fetch_flight_price(
-#             origin=route.origin_airport.iata_code,
-#             destination=route.destination_airport.iata_code,
-#             departure_date=route.departure_date.isoformat(),
-#         )
-
-#         if not price_data:
-#             logger.warning(f"No price found for route {route_id}")
-#             return 0
-
-#         try:
-#             flight_currency = Currency(price_data["currency"])
-#         except ValueError:
-#             logger.error(f"Unsupported currency {price_data['currency']} for route {route_id}")
-#             return 0
-
-#         price = Decimal(str(price_data["price"]))
-#         airline_name = price_data.get("airline")
-#         airline_id = reference_service.find_airline_id(db, airline_name)
-
-#         if airline_id is None:
-#             logger.warning(f"Unknown airline {price_data.get('airline')!r} for route {route_id}")
-#             return 0
-
-#         flight_price = FlightPrice(
-#             route_id=route.id,
-#             price=price,
-#             currency=flight_currency,
-#             airline_id=airline_id,
-#             departure_date=route.departure_date,
-#             return_date=route.return_date,
-#         )
-#         db.add(flight_price)
-#         db.commit()
-#         logger.info(f"Saved price for route {route_id}")
-
-#         alert_stmt = select(PriceAlert).where((PriceAlert.route_id == route_id) & (PriceAlert.is_active))
-#         alert = db.execute(alert_stmt).scalar_one_or_none()
-#         if not alert:
-#             return 1
-
-#         alert_currency = Currency(alert.currency)
-#         new_price = currency_service.convert(price, flight_currency, alert_currency)
-
-#         if new_price < alert.threshold_price:
-#             logger.warning(f"Price drop! {new_price} {alert_currency} < {alert.threshold_price} {alert_currency}")
-
-#             prev_price_stmt = (
-#                 select(FlightPrice)
-#                 .where((FlightPrice.route_id == route_id) & (FlightPrice.id != flight_price.id))
-#                 .order_by(FlightPrice.fetched_at.desc())
-#                 .limit(1)
-#             )
-#             prev = db.execute(prev_price_stmt).scalar_one_or_none()
-#             old_price = currency_service.convert(prev.price, prev.currency, alert_currency) if prev else new_price
-
-#             send_price_drop_email_task.delay(
-#                 user_id=str(route.user_id),
-#                 route_id=route.id,
-#                 old_price=float(old_price),
-#                 new_price=float(new_price),
-#             )
-
-#         return 1
-
-#     except (TaskExecutionError, httpx.HTTPError) as e:
-#         logger.error(f"Network or API error: {e}")
-#         self.retry(exc=e, countdown=300)
-#         return 0
-
-#     except Exception as e:
-#         logger.error(f"Unexpected error: {e}")
-#         db.rollback()
-#         raise
-
-#     finally:
-#         db.close()
+logger = logging.getLogger(__name__)
 
 
-# @celery_app.task
-# def fetch_all_prices_periodic() -> int:
-#     db = SessionLocal()
-#     try:
-#         stmt = select(Route).join(PriceAlert).where(PriceAlert.is_active).distinct()
-#         routes = db.execute(stmt).scalars().all()
+@celery_app.task(
+    bind=True, max_retries=3, autoretry_for=(httpx.TransportError,), retry_backoff=True, retry_backoff_max=30
+)
+def fetch_prices_for_route(self, route_id: str, user_id: str) -> int:
+    with SessionLocal() as db:
+        user_repository = UserRepository(db)
+        user = user_repository.get_by_id(user_id)
+        if user is None:
+            logger.warning("User not found: %s", user_id)
+            return 0
 
-#         logger.info(f"Found {len(routes)} routes with alerts")
+        route_service = RouteService(
+            routes=RouteRepository(db),
+            airports=AirportRepository(db),
+        )
 
-#         count = 0
-#         for route in routes:
-#             fetch_prices_for_route.delay(route_id=str(route.id))
-#             count += 1
+        route = route_service.get_route(user=user, route_id=route_id)
+        if route is None or not route.is_active:
+            logger.warning("Failed to enqueue price fetch: route_id=%s user_id=%s", route_id, user_id)
+            return 0
 
-#         logger.info(f"Queued {count} price fetch tasks")
-#         return count
+        provider = SerpApiFlightProvider(api_key=settings.SERPAPI_KEY, base_url=settings.SERPAPI_URL)
+        offers = provider.fetch_offers(
+            origin_code=route.origin_airport.iata_code,
+            destination_code=route.destination_airport.iata_code,
+            departure_date=route.departure_date,
+            return_date=route.return_date,
+            currency=route.currency,
+        )
+        if not offers:
+            logger.warning("No offers for route %s", route_id)
+            return 0
 
-#     except Exception as exc:
-#         logger.error(f"Error: {exc}")
-#         raise
+        best = min(offers, key=lambda offer: offer["price"])
 
-#     finally:
-#         db.close()
+        airline_id = ReferenceService(airports=AirportRepository(db), airlines=AirlineRepository(db)).find_airline_id(
+            best["airline"]
+        )
+        if airline_id is None:
+            logger.warning("Unknown airline %r for route %s", best["airline"], route_id)
+            return 0
+
+        flight_price = FlightPrice(
+            route_id=route.id,
+            airline_id=airline_id,
+            price=Decimal(str(best["price"])),
+            currency=best["currency"],
+            departure_date=route.departure_date,
+            return_date=route.return_date,
+        )
+        db.add(flight_price)
+
+        alert_to_notify = AlertService(AlertRepository(db), route_service).check_price(
+            route=route, flight_price=flight_price, now=datetime.now(timezone.utc)
+        )
+        if alert_to_notify:
+            pass
+
+        db.commit()
+
+        logger.info("Saved price %s %s for route %s", flight_price.price, flight_price.currency, route_id)
+        return 1
+
+
+@celery_app.task
+def fetch_all_prices_periodic() -> int:
+    today = datetime.now(timezone.utc).date()
+
+    with SessionLocal() as db:
+        targets = RouteRepository(db).list_tracking_targets(today)
+    queued = 0
+    for route_id, user_id in targets:
+        try:
+            route_id, user_id = str(route_id), str(user_id)
+            fetch_prices_for_route.delay(route_id=route_id, user_id=user_id)
+            queued += 1
+        except Exception:
+            logger.exception(
+                "Failed to enqueue price fetch: route_id=%s user_id=%s",
+                route_id,
+                user_id,
+            )
+
+    logger.info("Queued price fetch tasks: %d/%d", queued, len(targets))
+
+    return queued

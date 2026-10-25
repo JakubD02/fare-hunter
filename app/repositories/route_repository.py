@@ -1,3 +1,5 @@
+from datetime import date
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -18,6 +20,16 @@ class RouteRepository:
             select(Route).where(Route.user_id == user.id).order_by(Route.created_at.desc()).limit(limit).offset(offset)
         )
         return list(self._db.execute(query).scalars().all())
+
+    def list_tracking_targets(self, today: date) -> list[tuple[str, str]]:
+        query = (
+            select(Route.id, Route.user_id)
+            .where(Route.is_active.is_(True), Route.departure_date >= today)
+            .order_by(Route.departure_date.asc())
+        )
+        rows = self._db.execute(query).all()
+
+        return [(str(route_id), str(user_id)) for route_id, user_id in rows]
 
     def add(self, route: Route) -> Route:
         self._db.add(route)

@@ -18,6 +18,14 @@ class AlertRepository:
         )
         return self._db.execute(query).scalar_one_or_none()
 
+    def get_active_by_route_id(self, route_id: str) -> PriceAlert | None:
+        return self._db.scalar(
+            select(PriceAlert).where(
+                PriceAlert.route_id == route_id,
+                PriceAlert.is_active.is_(True),
+            )
+        )
+
     def add(self, alert: PriceAlert) -> PriceAlert:
         self._db.add(alert)
         self._db.commit()
