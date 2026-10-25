@@ -106,7 +106,7 @@ class Settings(BaseSettings):
 
     # serpapi
     SERPAPI_KEY: str
-    SERPAPI_URL: str = "https://serpapi.com/api"
+    SERPAPI_URL: str = "https://serpapi.com"
 
     # sendgrid
     SENDGRID_API_KEY: str

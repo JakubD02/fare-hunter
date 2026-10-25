@@ -22,4 +22,5 @@ class FlightPriceProvider(Protocol):
         destination_code: str,
         departure_date: date,
         return_date: date | None = None,
+        currency: Currency = Currency.PLN,
     ) -> list[FlightOffer]: ...
