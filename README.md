@@ -67,7 +67,7 @@ fare-hunter/
 │   │           ├── token.py
 │   │           └── user.py
 │   ├── core/
-│   │   ├── config.py                  # Settings loaded from environment (.env)
+│   │   ├── config.py                  # Settings from environment (.env) and domain limits
 │   │   ├── database.py                # Engine, session, get_db
 │   │   ├── exceptions.py
 │   │   └── security.py                # JWT and password helpers
@@ -81,22 +81,24 @@ fare-hunter/
 │   │   ├── price_alert.py
 │   │   ├── route.py
 │   │   └── user.py
-│   ├── repositories/                  # Data access layer
+│   ├── repositories/                  # Data access layer (DB only)
 │   │   ├── airline_repository.py
 │   │   ├── airport_repository.py
 │   │   ├── alert_repository.py
 │   │   ├── flight_price_repository.py
 │   │   ├── route_repository.py
 │   │   └── user_repository.py
-│   ├── services/                      # Business logic
+│   ├── services/                      # Business logic and external APIs
+│   │   ├── alert_rules.py             # Price alert decision rules
 │   │   ├── alert_service.py
 │   │   ├── auth_service.py
 │   │   ├── currency.py
-│   │   ├── flight_price_provider.py   # Provider interface
+│   │   ├── flight_price_provider.py   # FlightPriceProvider protocol
 │   │   ├── flight_price_service.py
 │   │   ├── reference_service.py
 │   │   ├── route_service.py
-│   │   ├── serpapi_mock_client.py     # Mock SerpAPI client
+│   │   ├── serpapi_mock_client.py     # Mock SerpAPI client (dev/testing)
+│   │   ├── serpapi_provider.py        # SerpApiFlightProvider (Google Flights)
 │   │   └── user_service.py
 │   ├── tasks/                         # Celery tasks
 │   │   ├── email_tasks.py
@@ -111,14 +113,27 @@ fare-hunter/
 │   └── airports.json
 ├── scripts/
 │   ├── init_db.py                     # Database initialization
-│   └── seed_data.py                   # Loads data/*.json
+│   ├── seed_data.py                   # Loads data/*.json
+│   └── test_serpapi.py                # Manual smoke test of the SerpAPI provider
 ├── tests/
-│   ├── auth/                          # Login, registration, security
-│   ├── routes/                        # Routes, airlines, airports, alerts, statistics
-│   ├── tasks/                         # Celery tasks
-│   ├── mocks/                         # Fake SerpAPI responses
 │   ├── conftest.py
-│   └── test_health.py
+│   ├── e2e/                           # End-to-end tests (planned)
+│   ├── fakes/                         # Fake implementations for tests
+│   ├── mocks/
+│   │   └── serpapi_fake.py            # Fake SerpAPI responses
+│   ├── unit/
+│   │   ├── core/
+│   │   │   └── test_security.py       # JWT and password helpers
+│   │   ├── schemas/                   # Pydantic schema validation
+│   │   └── services/                  # Service unit tests (planned)
+│   └── integration/
+│       ├── alerts/                    # Price alert endpoints (planned split)
+│       ├── auth/                      # Login, registration
+│       ├── routes/                    # Airlines, airports, alerts, routes, statistics
+│       ├── statistics/                # Statistics endpoints (planned split)
+│       ├── tasks/
+│       │   └── test_price_tasks.py    # Celery price task
+│       └── test_health.py
 ├── alembic.ini
 ├── docker-compose.yml
 ├── Dockerfile
@@ -164,7 +179,7 @@ docker-compose logs app | tail -30
 ```bash
 uv sync
 uv run alembic upgrade head
-uv run python scripts/init_db.py    # TODO: check the exact command for seeding
+uv run python scripts/init_db.py
 uv run uvicorn app.main:app --reload
 ```
 
@@ -194,8 +209,6 @@ curl http://localhost:8000/airlines
 ---
 
 ## 📱 API Endpoints
-
-> TODO: verify paths against the routers in `app/api/v1/endpoints/routers/`. Routes below come from the previous README and the tests.
 
 ### Authentication
 
@@ -253,8 +266,6 @@ Use airport `id` values from `/airports`, not IATA codes.
 | GET | `/airports` | List airports |
 | GET | `/airlines` | List airlines |
 
-> TODO: add the endpoints from `currency.py`.
-
 ---
 
 ## ⚙️ Configuration
@@ -276,7 +287,7 @@ REFRESH_TOKEN_EXPIRE_DAYS=7
 
 # SerpAPI
 SERPAPI_KEY=your-serpapi-key
-SERPAPI_URL=https://serpapi.com/api
+SERPAPI_URL=https://serpapi.com
 
 # SendGrid
 SENDGRID_API_KEY=SG.xxxxxxxx
@@ -288,13 +299,13 @@ APP_ENV=development
 LOG_LEVEL=DEBUG
 ```
 
-Fixed domain limits (name lengths, IATA/ICAO code lengths, password limits, etc.) are **not** environment variables. They live in `app/core/constants.py`:
+Fixed domain limits (name lengths, IATA/ICAO code lengths, password limits, etc.) are **not** environment variables. They are defined as frozen config models in `app/core/config.py`:
 
 ```python
-from app.core.constants import airline_config, user_config
+from app.core.config import settings
 
-airline_config.iata_code_length  # 2
-user_config.password_max_length  # 72
+settings.airline.iata_code_length  # 2
+settings.user_config.password_max_length  # 72
 ```
 
 ---
@@ -315,7 +326,7 @@ user_config.password_max_length  # 72
 ### 3. Celery Beat runs every 8 hours
 
 1. `fetch_all_prices_periodic` runs.
-2. Prices are fetched for routes with active alerts.
+2. A `fetch_prices_for_route` task is queued for each tracked route.
 3. If a price is below the threshold, a price-drop email task is queued.
 
 ---
@@ -325,8 +336,15 @@ user_config.password_max_length  # 72
 ```bash
 uv sync
 uv run pytest                          # all tests
-uv run pytest tests/auth -v            # one directory
+uv run pytest tests/integration -v     # integration tests only
+uv run pytest -m unit                  # unit tests only
 uv run pytest --cov=app tests/         # with coverage
+```
+
+Live SerpAPI smoke test (uses a real API call and your key):
+
+```bash
+uv run python -m scripts.test_serpapi
 ```
 
 ---
@@ -393,6 +411,7 @@ uv run alembic downgrade -1
 - [x] Celery background jobs
 - [x] Docker Compose setup
 - [x] Repository layer and Alembic migrations
+- [x] SerpAPI flight price provider
 - [ ] Advanced analytics (price trends, best time to buy)
 - [ ] Multiple alert types (availability, schedule changes)
 - [ ] Deployment to Heroku/AWS
@@ -409,3 +428,4 @@ uv run alembic downgrade -1
 ---
 
 **Happy flight hunting! 🛫✈️**
+
