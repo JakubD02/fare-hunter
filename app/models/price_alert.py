@@ -1,7 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import (
     ForeignKey,
     Numeric,
@@ -9,7 +8,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.config import settings
-from app.enums.currency import Currency
 from app.models.base import BaseModel
 
 

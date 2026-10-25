@@ -1,13 +1,12 @@
 from datetime import date
 
-from sqlalchemy import ForeignKey, String
 from sqlalchemy import Enum as StrEnum
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.enums.currency import Currency
 from app.models.airport import Airport
 from app.models.base import BaseModel
-
 
 
 class Route(BaseModel):
