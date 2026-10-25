@@ -20,6 +20,5 @@ class PriceAlert(BaseModel):
     threshold_price: Mapped[Decimal] = mapped_column(
         Numeric(settings.price.price_max_digits, settings.price.price_decimal_places), nullable=False
     )
-    currency: Mapped[Currency] = mapped_column(SqlEnum(Currency), default=Currency.PLN, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     last_notified_at: Mapped[datetime | None] = mapped_column()

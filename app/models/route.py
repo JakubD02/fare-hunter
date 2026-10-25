@@ -1,10 +1,13 @@
 from datetime import date
 
 from sqlalchemy import ForeignKey, String
+from sqlalchemy import Enum as StrEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.enums.currency import Currency
 from app.models.airport import Airport
 from app.models.base import BaseModel
+
 
 
 class Route(BaseModel):
@@ -15,6 +18,12 @@ class Route(BaseModel):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
+    )
+    currency: Mapped[Currency] = mapped_column(
+        StrEnum(Currency, native_enum=False),
+        default=Currency.PLN,
+        server_default=Currency.PLN.value,
+        nullable=False,
     )
     origin_id: Mapped[str] = mapped_column(ForeignKey("airports.id"), nullable=False, index=True)
     destination_id: Mapped[str] = mapped_column(ForeignKey("airports.id"), nullable=False, index=True)

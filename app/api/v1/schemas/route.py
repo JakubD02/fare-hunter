@@ -3,6 +3,7 @@ from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
 
 from app.api.v1.schemas.base import UpdateSchemaBase
+from app.enums.currency import Currency
 
 
 def validate_departure_date(val: date) -> date:
@@ -23,6 +24,7 @@ class RouteFields(BaseModel):
     departure_date: date
     return_date: date | None = None
     is_active: bool = True
+    currency: Currency = Currency.PLN
 
 
 class RouteCreate(RouteFields):

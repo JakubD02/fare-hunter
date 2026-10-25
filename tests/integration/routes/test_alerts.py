@@ -12,7 +12,6 @@ class TestGetAlert:
         assert response.status_code == 200
         data = response.json()
         assert data["threshold_price"] == created_alert["threshold_price"]
-        assert data["currency"] == created_alert["currency"]
         assert data["is_active"] is True
 
     def test_get_alert_not_found(self, client, registered_user, created_route):
@@ -53,7 +52,6 @@ class TestUpsertAlert:
         assert response.status_code == 200
         data = response.json()
         assert Decimal(data["threshold_price"]) == Decimal(str(alert_data["threshold_price"]))
-        assert data["currency"] == alert_data["currency"]
         assert data["is_active"] is alert_data["is_active"]
         assert "id" in data
         assert "route_id" in data
@@ -74,7 +72,6 @@ class TestUpsertAlert:
         data = response.json()
         assert Decimal(data["threshold_price"]) == Decimal(str(200))
         assert data["is_active"] is False
-        assert data["currency"] == created_alert["currency"]
 
     def test_upsert_alert_route_not_found(self, client, registered_user):
         """Route doesn't exist"""
