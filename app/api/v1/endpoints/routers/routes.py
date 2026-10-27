@@ -11,8 +11,7 @@ from app.core.database import get_db
 from app.repositories.airport_repository import AirportRepository
 from app.repositories.route_repository import RouteRepository
 from app.services.route_service import RouteService
-
-# from app.tasks.price_tasks import fetch_prices_for_route
+from app.tasks.price_tasks import fetch_prices_for_route
 
 router = APIRouter(prefix="/routes", tags=["routes"])
 
@@ -35,7 +34,7 @@ def create_route(db: db_dependency, current_user: CurrentUser, route_in: RouteCr
     except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-    # fetch_prices_for_route.delay(route_id=route.id)
+    fetch_prices_for_route.delay(route_id=route.id, user_id=str(current_user.id))
 
     return route
 

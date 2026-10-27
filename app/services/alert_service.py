@@ -23,6 +23,11 @@ class AlertService:
         logger.debug("alert lookup route_id=%s user_id=%s found=%s", route_id, user.id, alert is not None)
         return alert
 
+    def get_alert_by_id(self, alert_id: str, user: User) -> PriceAlert | None:
+        alert = self._alerts.get_route_by_id(user, alert_id)
+        logger.debug("alert lookup user_id=%s found=%s", user.id, alert is not None)
+        return alert
+
     def upsert_alert(self, user: User, route_id: str, alert_in: PriceAlertUpdate) -> PriceAlert | None:
         if self._routes.get_route(user, route_id) is None:
             logger.warning("alert upsert rejected: route not found route_id=%s user_id=%s", route_id, user.id)
@@ -72,6 +77,12 @@ class AlertService:
         self._alerts.delete(alert)
         logger.info("alert removed id=%s route_id=%s user_id=%s", alert.id, route_id, user.id)
         return True
+
+    def mark_notified(self, alert: PriceAlert, at: datetime) -> PriceAlert:
+        alert.last_notified_at = at
+        saved = self._alerts.save(alert)
+        logger.info("alert notified id=%s at=%s", alert.id, at)
+        return saved
 
     def check_price(self, route: Route, flight_price: FlightPrice, now: datetime) -> PriceAlert | None:
         alert = self._alerts.get_active_by_route_id(route.id)

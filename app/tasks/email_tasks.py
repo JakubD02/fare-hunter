@@ -1,83 +1,100 @@
-# import logging
+import logging
+from datetime import datetime, timezone
+from decimal import Decimal
 
-# from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-# from app.celery_app import celery_app
-# from app.core.database import SessionLocal
-# from app.core.exceptions import EmailSendError
-# from app.models.price_alert import PriceAlert
-# from app.models.route import Route
-# # from app.services.email_service import email_service
+from app.celery_app import celery_app
+from app.core.database import SessionLocal
+from app.core.exceptions import EmailSendError
+from app.models.price_alert import PriceAlert
+from app.models.route import Route
+from app.models.user import User
+from app.repositories.airport_repository import AirportRepository
+from app.repositories.alert_repository import AlertRepository
+from app.repositories.route_repository import RouteRepository
+from app.repositories.user_repository import UserRepository
+from app.services.alert_service import AlertService
+from app.services.email_service import AlertAction, EmailService
+from app.services.route_service import RouteService
 
-# logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-
-# # @celery_app.task(bind=True, max_retries=3)
-# # def send_alert_confirmation_email_task(self, user_id: str, alert_id: int):
-# #     db = SessionLocal()
-# #     try:
-# #         user = get_user_by_id(db, user_id)
-
-# #         if not user:
-# #             logger.warning(f"User {user_id} not found")
-# #             return
-
-# #         alert = db.execute(select(PriceAlert).where(PriceAlert.id == alert_id)).scalar_one_or_none()
-# #         if not alert:
-# #             logger.warning(f"Alert {alert_id} not found")
-# #             return
-
-# #         route = db.execute(select(Route).where(Route.id == alert.route_id)).scalar_one_or_none()
-# #         if not route:
-# #             logger.warning(f"Route {alert.route_id} not found")
-# #             return
-
-# #         success = email_service.send_alert_confirmation_email(
-# #             to_email=user.email,
-# #             route=f"{route.origin_id} -> {route.destination_id}",
-# #             threshold=float(alert.threshold_price),
-# #         )
-
-# #         if not success:
-# #             raise EmailSendError(f"Failed to send email to {user.email}")
-
-# #     except EmailSendError as e:
-# #         logger.error(f"Error sending alert confirmation email: {e}")
-# #         raise self.retry(exc=e, countdown=300)
-# #     except (ValueError, LookupError) as e:
-# #         logger.error(f"Invalid data in alert confirmation email task: {e}")
-
-# #     finally:
-# #         db.close()
+EMAIL_RETRY_OPTIONS = {
+    "autoretry_for": (EmailSendError,),
+    "retry_backoff": True,
+    "retry_backoff_max": 300,
+    "max_retries": 3,
+}
 
 
-# @celery_app.task(bind=True, max_retries=3)
-# def send_price_drop_email_task(self, user_id: str, route_id: str, old_price: float, new_price: float):
-#     db = SessionLocal()
-#     try:
-#         user = get_user_by_id(db, user_id)
+def _load_alert_context(db: Session, user_id: str, route_id: str) -> tuple[User, PriceAlert, Route] | None:
+    user = UserRepository(db).get_by_id(user_id)
+    if user is None:
+        logger.warning("Email skipped: user not found user_id=%s", user_id)
+        return None
 
-#         if not user:
-#             logger.warning(f"User {user_id} not found")
-#             return
+    route_service = RouteService(routes=RouteRepository(db), airports=AirportRepository(db))
+    alert_service = AlertService(AlertRepository(db), route_service)
 
-#         route = db.execute(select(Route).where(Route.id == route_id)).scalar_one_or_none()
-#         if not route:
-#             logger.warning(f"Route {route_id} not found")
-#             return
+    alert = alert_service.get_alert(user, route_id)
+    if alert is None:
+        logger.warning("Email skipped: alert not found route_id=%s user_id=%s", route_id, user_id)
+        return None
 
-#         success = email_service.send_price_alert_email(
-#             to_email=user.email,
-#             route=f"{route.origin_id} → {route.destination_id}",
-#             old_price=old_price,
-#             new_price=new_price,
-#         )
+    route = route_service.get_route(user, route_id)
+    if route is None:
+        logger.warning("Email skipped: route not found route_id=%s user_id=%s", route_id, user_id)
+        return None
 
-#         if not success:
-#             raise EmailSendError(f"Failed to send email {user.email}")
+    return user, alert, route
 
-#     except EmailSendError as e:
-#         logger.error(f"Error sending price drop email: {e}")
-#         raise self.retry(exc=e, countdown=300)
-#     finally:
-#         db.close()
+
+def _route_label(route: Route) -> str:
+    return f"{route.origin_airport.iata_code} → {route.destination_airport.iata_code}"
+
+
+@celery_app.task(bind=True, **EMAIL_RETRY_OPTIONS)
+def send_alert_confirmation_email_task(self, route_id: str, user_id: str, action: AlertAction) -> int:
+    with SessionLocal() as db:
+        context = _load_alert_context(db, user_id, route_id)
+        if context is None:
+            return 0
+        user, alert, route = context
+
+        EmailService().send_alert_confirmation(
+            to_email=user.email,
+            route_label=_route_label(route),
+            threshold=alert.threshold_price,
+            currency=route.currency.value,
+            action=action,
+        )
+
+    logger.info("Confirmation sent route_id=%s user_id=%s action=%s", route_id, user_id, action)
+    return 1
+
+
+@celery_app.task(bind=True, **EMAIL_RETRY_OPTIONS)
+def send_price_drop_email_task(self, route_id: str, user_id: str, price: str) -> int:
+    with SessionLocal() as db:
+        context = _load_alert_context(db, user_id, route_id)
+        if context is None:
+            return 0
+        user, alert, route = context
+
+        EmailService().send_price_drop_notification(
+            to_email=user.email,
+            route_label=_route_label(route),
+            price=Decimal(price),
+            threshold=alert.threshold_price,
+            currency=route.currency.value,
+        )
+
+        now = datetime.now(timezone.utc)
+        route_service = RouteService(routes=RouteRepository(db), airports=AirportRepository(db))
+        alert_service = AlertService(AlertRepository(db), route_service)
+
+        alert_service.mark_notified(alert, now)
+
+    logger.info("Price drop email sent route_id=%s user_id=%s", route_id, user_id)
+    return 1

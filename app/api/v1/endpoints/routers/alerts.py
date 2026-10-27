@@ -12,8 +12,7 @@ from app.repositories.alert_repository import AlertRepository
 from app.repositories.route_repository import RouteRepository
 from app.services.alert_service import AlertService
 from app.services.route_service import RouteService
-
-# from app.tasks.email_tasks import send_alert_confirmation_email_task
+from app.tasks.email_tasks import send_alert_confirmation_email_task
 
 router = APIRouter(prefix="/routes", tags=["alerts"])
 
@@ -48,6 +47,7 @@ def upsert_alert(
     alert_in: PriceAlertUpdate,
 ):
     try:
+        existed = _alert_service(db).get_alert(user, route_id) is not None
         alert = _alert_service(db).upsert_alert(user, route_id, alert_in)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e)) from e
@@ -55,10 +55,11 @@ def upsert_alert(
     if not alert:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")
 
-    # send_alert_confirmation_email_task.delay(
-    #     user_id=str(user.id),
-    #     alert_id=alert.id,
-    # )
+    send_alert_confirmation_email_task.delay(
+        route_id=route_id,
+        user_id=str(user.id),
+        action="updated" if existed else "created",
+    )
 
     return alert
 

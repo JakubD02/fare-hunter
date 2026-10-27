@@ -17,6 +17,7 @@ from app.services.alert_service import AlertService
 from app.services.reference_service import ReferenceService
 from app.services.route_service import RouteService
 from app.services.serpapi_provider import SerpApiFlightProvider
+from app.tasks.email_tasks import send_price_drop_email_task
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,11 @@ def fetch_prices_for_route(self, route_id: str, user_id: str) -> int:
             route=route, flight_price=flight_price, now=datetime.now(timezone.utc)
         )
         if alert_to_notify:
-            pass
+            send_price_drop_email_task.delay(
+                route_id=str(route.id),
+                user_id=str(route.user_id),
+                price=str(flight_price.price),
+            )
 
         db.commit()
 

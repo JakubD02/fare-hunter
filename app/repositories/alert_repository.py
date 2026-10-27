@@ -18,6 +18,14 @@ class AlertRepository:
         )
         return self._db.execute(query).scalar_one_or_none()
 
+    def get_route_by_id(self, user: User, alert_id: str) -> PriceAlert | None:
+        query = (
+            select(PriceAlert)
+            .join(Route, PriceAlert.route_id == Route.id)
+            .where(PriceAlert.id == alert_id, Route.user_id == user.id)
+        )
+        return self._db.scalar(query)
+
     def get_active_by_route_id(self, route_id: str) -> PriceAlert | None:
         return self._db.scalar(
             select(PriceAlert).where(

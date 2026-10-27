@@ -315,19 +315,19 @@ settings.user_config.password_max_length  # 72
 ### 1. A user creates a route
 
 - The route is saved in the database.
-- A Celery task `fetch_prices_for_route` is queued.
-- The worker calls SerpAPI and saves the results as `FlightPrice` records.
+- `fetch_prices_for_route` is queued immediately, so the first price appears without waiting for the schedule.
 
 ### 2. A user sets a price alert
 
-- The alert is created or updated.
-- A confirmation email task is queued and the worker sends it through SendGrid.
+- `PUT /routes/{route_id}/alert` creates or updates the alert.
+- After the commit, `send_alert_confirmation_email_task` is queued. The worker sends a confirmation email.
 
-### 3. Celery Beat runs every 8 hours
+### 3. Celery Beat runs every 8 hours (00:00, 08:00, 16:00 Warsaw time)
 
-1. `fetch_all_prices_periodic` runs.
-2. A `fetch_prices_for_route` task is queued for each tracked route.
-3. If a price is below the threshold, a price-drop email task is queued.
+1. `fetch_all_prices_periodic` queues a `fetch_prices_for_route` task for each active route.
+2. Each task saves the cheapest offer as a `FlightPrice`.
+3. If the price is below the alert threshold and the user was not notified yet, `send_price_drop_email_task` is queued.
+4. After a successful send, `last_notified_at` is set on the alert, so the user is not emailed again on every run.
 
 ---
 
@@ -344,7 +344,8 @@ uv run pytest --cov=app tests/         # with coverage
 Live SerpAPI smoke test (uses a real API call and your key):
 
 ```bash
-uv run python -m scripts.test_serpapi
+uv run python -m scripts.test_serpapi                       # SerpAPI
+uv run python -m scripts.test_sendgrid you@example.com      # SendGrid
 ```
 
 ---
@@ -376,6 +377,19 @@ docker-compose exec db psql -U postgres -d fare_hunter
 ```
 
 ---
+
+## ⏱️ Running Celery locally
+Redis must be running, then start the worker and beat in separate terminals:
+```bash
+uv run celery -A app.celery_app worker --loglevel=info --pool=solo
+uv run celery -A app.celery_app beat --loglevel=info
+```
+
+`--pool=solo` is needed on macOS, where the default prefork pool fails with the current Celery version. Trigger the periodic fetch manually for testing:
+
+```bash
+uv run celery -A app.celery_app call app.tasks.price_tasks.fetch_all_prices_periodic
+```
 
 ## 🗄️ Database Migrations
 
