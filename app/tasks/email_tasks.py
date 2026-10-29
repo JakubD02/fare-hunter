@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
@@ -61,6 +61,10 @@ def send_alert_confirmation_email_task(self, route_id: str, user_id: str, action
         if context is None:
             return 0
         user, alert, route = context
+        now = datetime.now(timezone.utc)
+        if alert.last_notified_at and now - alert.last_notified_at < timedelta(hours=24):
+            logger.info("Price drop email skipped: already notified route_id=%s", route_id)
+            return 0
 
         EmailService().send_alert_confirmation(
             to_email=user.email,

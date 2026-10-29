@@ -84,12 +84,8 @@ class AlertService:
         logger.info("alert notified id=%s at=%s", alert.id, at)
         return saved
 
-    def check_price(self, route: Route, flight_price: FlightPrice, now: datetime) -> PriceAlert | None:
+    def check_price(self, route: Route, flight_price: FlightPrice, now: datetime) -> bool:
         alert = self._alerts.get_active_by_route_id(route.id)
         if alert is None:
-            return None
-        if not should_notify(alert, flight_price.price, flight_price.currency, route.currency, now):
-            return None
-
-        alert.last_notified_at = now
-        return alert
+            return False
+        return should_notify(alert, flight_price.price, flight_price.currency, route.currency, now)

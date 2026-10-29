@@ -74,17 +74,17 @@ def fetch_prices_for_route(self, route_id: str, user_id: str) -> int:
         )
         db.add(flight_price)
 
-        alert_to_notify = AlertService(AlertRepository(db), route_service).check_price(
+        should_send = AlertService(AlertRepository(db), route_service).check_price(
             route=route, flight_price=flight_price, now=datetime.now(timezone.utc)
         )
-        if alert_to_notify:
+        db.commit()
+
+        if should_send:
             send_price_drop_email_task.delay(
                 route_id=str(route.id),
                 user_id=str(route.user_id),
                 price=str(flight_price.price),
             )
-
-        db.commit()
 
         logger.info("Saved price %s %s for route %s", flight_price.price, flight_price.currency, route_id)
         return 1
