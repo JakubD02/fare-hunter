@@ -6,14 +6,16 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.repositories.airline_repository import AirlineRepository
-from app.repositories.airport_repository import AirportRepository
-from app.repositories.alert_repository import AlertRepository
-from app.repositories.flight_price_repository import FlightPriceRepository
-from app.repositories.route_repository import RouteRepository
-from app.repositories.user_repository import UserRepository
 from app.services.alert_service import AlertService
 from app.services.auth_service import AuthService
+from app.services.factories import (
+    build_alert_service,
+    build_auth_service,
+    build_flight_price_service,
+    build_reference_service,
+    build_route_service,
+    build_user_service,
+)
 from app.services.flight_price_service import FlightPriceService
 from app.services.reference_service import ReferenceService
 from app.services.route_service import RouteService
@@ -46,42 +48,42 @@ PaginationDep = Annotated[Pagination, Depends(get_pagination)]
 
 # --- services ---
 def get_user_service(db: DbSession) -> UserService:
-    return UserService(users=UserRepository(db))
+    return build_user_service(db)
 
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 
 
-def get_auth_service(users: UserServiceDep) -> AuthService:
-    return AuthService(users=users)
+def get_auth_service(db: DbSession) -> AuthService:
+    return build_auth_service(db)
 
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 
 
 def get_route_service(db: DbSession) -> RouteService:
-    return RouteService(routes=RouteRepository(db), airports=AirportRepository(db))
+    return build_route_service(db)
 
 
 RouteServiceDep = Annotated[RouteService, Depends(get_route_service)]
 
 
-def get_alert_service(db: DbSession, routes: RouteServiceDep) -> AlertService:
-    return AlertService(alerts=AlertRepository(db), routes=routes)
+def get_alert_service(db: DbSession) -> AlertService:
+    return build_alert_service(db)
 
 
 AlertServiceDep = Annotated[AlertService, Depends(get_alert_service)]
 
 
-def get_flight_price_service(db: DbSession, routes: RouteServiceDep) -> FlightPriceService:
-    return FlightPriceService(prices=FlightPriceRepository(db), airlines=AirlineRepository(db), routes=routes)
+def get_flight_price_service(db: DbSession) -> FlightPriceService:
+    return build_flight_price_service(db)
 
 
 FlightPriceServiceDep = Annotated[FlightPriceService, Depends(get_flight_price_service)]
 
 
 def get_reference_service(db: DbSession) -> ReferenceService:
-    return ReferenceService(airports=AirportRepository(db), airlines=AirlineRepository(db))
+    return build_reference_service(db)
 
 
 ReferenceServiceDep = Annotated[ReferenceService, Depends(get_reference_service)]

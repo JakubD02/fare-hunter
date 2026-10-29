@@ -8,14 +8,7 @@ from app.celery_app import celery_app
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.models.flight_price import FlightPrice
-from app.repositories.airline_repository import AirlineRepository
-from app.repositories.airport_repository import AirportRepository
-from app.repositories.alert_repository import AlertRepository
-from app.repositories.route_repository import RouteRepository
-from app.repositories.user_repository import UserRepository
-from app.services.alert_service import AlertService
-from app.services.reference_service import ReferenceService
-from app.services.route_service import RouteService
+from app.services.factories import build_alert_service, build_reference_service, build_route_service, build_user_service
 from app.services.serpapi_provider import SerpApiFlightProvider
 from app.tasks.email_tasks import send_price_drop_email_task
 
@@ -27,18 +20,12 @@ logger = logging.getLogger(__name__)
 )
 def fetch_prices_for_route(self, route_id: str, user_id: str) -> int:
     with SessionLocal() as db:
-        user_repository = UserRepository(db)
-        user = user_repository.get_by_id(user_id)
+        user = build_user_service(db).get_by_id(user_id)
         if user is None:
             logger.warning("User not found: %s", user_id)
             return 0
+        route = build_route_service(db).get_route(user=user, route_id=route_id)
 
-        route_service = RouteService(
-            routes=RouteRepository(db),
-            airports=AirportRepository(db),
-        )
-
-        route = route_service.get_route(user=user, route_id=route_id)
         if route is None or not route.is_active:
             logger.warning("Failed to enqueue price fetch: route_id=%s user_id=%s", route_id, user_id)
             return 0
@@ -57,9 +44,8 @@ def fetch_prices_for_route(self, route_id: str, user_id: str) -> int:
 
         best = min(offers, key=lambda offer: offer["price"])
 
-        airline_id = ReferenceService(airports=AirportRepository(db), airlines=AirlineRepository(db)).find_airline_id(
-            best["airline"]
-        )
+        airline_id = build_reference_service(db).find_airline_id(best["airline"])
+
         if airline_id is None:
             logger.warning("Unknown airline %r for route %s", best["airline"], route_id)
             return 0
@@ -74,7 +60,7 @@ def fetch_prices_for_route(self, route_id: str, user_id: str) -> int:
         )
         db.add(flight_price)
 
-        should_send = AlertService(AlertRepository(db), route_service).check_price(
+        should_send = build_alert_service(db).check_price(
             route=route, flight_price=flight_price, now=datetime.now(timezone.utc)
         )
         db.commit()
@@ -95,7 +81,7 @@ def fetch_all_prices_periodic() -> int:
     today = datetime.now(timezone.utc).date()
 
     with SessionLocal() as db:
-        targets = RouteRepository(db).list_tracking_targets(today)
+        targets = build_route_service(db).list_tracking_targets(today)
     queued = 0
     for route_id, user_id in targets:
         try:

@@ -10,13 +10,8 @@ from app.core.exceptions import EmailSendError
 from app.models.price_alert import PriceAlert
 from app.models.route import Route
 from app.models.user import User
-from app.repositories.airport_repository import AirportRepository
-from app.repositories.alert_repository import AlertRepository
-from app.repositories.route_repository import RouteRepository
-from app.repositories.user_repository import UserRepository
-from app.services.alert_service import AlertService
 from app.services.email_service import AlertAction, EmailService
-from app.services.route_service import RouteService
+from app.services.factories import build_alert_service, build_route_service, build_user_service
 
 logger = logging.getLogger(__name__)
 
@@ -29,20 +24,17 @@ EMAIL_RETRY_OPTIONS = {
 
 
 def _load_alert_context(db: Session, user_id: str, route_id: str) -> tuple[User, PriceAlert, Route] | None:
-    user = UserRepository(db).get_by_id(user_id)
+    user = build_user_service(db).get_by_id(user_id)
     if user is None:
         logger.warning("Email skipped: user not found user_id=%s", user_id)
         return None
 
-    route_service = RouteService(routes=RouteRepository(db), airports=AirportRepository(db))
-    alert_service = AlertService(AlertRepository(db), route_service)
-
-    alert = alert_service.get_alert(user, route_id)
+    alert = build_alert_service(db).get_alert(user, route_id)
     if alert is None:
         logger.warning("Email skipped: alert not found route_id=%s user_id=%s", route_id, user_id)
         return None
 
-    route = route_service.get_route(user, route_id)
+    route = build_route_service(db).get_route(user, route_id)
     if route is None:
         logger.warning("Email skipped: route not found route_id=%s user_id=%s", route_id, user_id)
         return None
@@ -95,10 +87,8 @@ def send_price_drop_email_task(self, route_id: str, user_id: str, price: str) ->
         )
 
         now = datetime.now(timezone.utc)
-        route_service = RouteService(routes=RouteRepository(db), airports=AirportRepository(db))
-        alert_service = AlertService(AlertRepository(db), route_service)
 
-        alert_service.mark_notified(alert, now)
+        build_alert_service(db).mark_notified(alert, now)
 
     logger.info("Price drop email sent route_id=%s user_id=%s", route_id, user_id)
     return 1

@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 
 from app.api.v1.schemas.route import RouteCreate, RouteUpdate
 from app.models.airport import Airport
@@ -48,6 +49,11 @@ class RouteService:
             route.departure_date,
         )
         return route
+
+    def list_tracking_targets(self, today: date) -> list[tuple[str, str]]:
+        targets = self._routes.list_tracking_targets(today)
+        logger.debug("tracking targets listed count=%d today=%s", len(targets), today)
+        return targets
 
     def update_route(self, user: User, route_id: str, route_in: RouteUpdate) -> Route | None:
         route = self._routes.get_for_user(user, route_id)
