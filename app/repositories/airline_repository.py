@@ -1,12 +1,11 @@
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
 
 from app.models.airline import Airline
+from app.repositories.base_repository import BaseRepository
 
 
-class AirlineRepository:
-    def __init__(self, db: Session) -> None:
-        self._db = db
+class AirlineRepository(BaseRepository[Airline]):
+    model = Airline
 
     def find_id(self, airline_name: str | None) -> str | None:
         """Resolve an airline by IATA code or name, case-insensitively."""

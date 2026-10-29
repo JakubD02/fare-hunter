@@ -28,7 +28,7 @@ class UserService:
             email=user_in.email,
             password_hash=hash_password(user_in.password),
         )
-        saved = self._users.add(user)
+        saved = self._users.try_add(user)
         if saved is None:
             logger.warning("registration rejected: email already in use")
             return None

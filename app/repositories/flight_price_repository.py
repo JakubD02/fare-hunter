@@ -1,20 +1,24 @@
 from datetime import datetime
+from decimal import Decimal
+from typing import TypedDict
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
 
+from app.enums.currency import Currency
 from app.models.flight_price import FlightPrice
+from app.repositories.base_repository import BaseRepository
 
 
-class FlightPriceRepository:
-    def __init__(self, db: Session) -> None:
-        self._db = db
+class PriceAggregate(TypedDict):
+    currency: Currency
+    min_price: Decimal
+    max_price: Decimal
+    avg_price: Decimal
+    sample_count: int
 
-    def add(self, flight_price: FlightPrice) -> FlightPrice:
-        self._db.add(flight_price)
-        self._db.commit()
-        self._db.refresh(flight_price)
-        return flight_price
+
+class FlightPriceRepository(BaseRepository[FlightPrice]):
+    model = FlightPrice
 
     def list_for_route(self, route_id: str, limit: int, offset: int) -> list[FlightPrice]:
         query = (
@@ -26,23 +30,14 @@ class FlightPriceRepository:
         )
         return list(self._db.scalars(query).all())
 
-    def latest_currency(self, route_id: str) -> str | None:
-        query = (
-            select(FlightPrice.currency)
-            .where(FlightPrice.route_id == route_id)
-            .order_by(FlightPrice.fetched_at.desc())
-            .limit(1)
-        )
-        return self._db.execute(query).scalar_one_or_none()
-
-    def aggregate_since(self, route_id: str, since: datetime) -> list[dict]:
+    def aggregate_since(self, route_id: str, since: datetime) -> list[PriceAggregate]:
         query = (
             select(
-                FlightPrice.currency.label("currency"),
+                FlightPrice.currency,
                 func.min(FlightPrice.price).label("min_price"),
                 func.max(FlightPrice.price).label("max_price"),
                 func.avg(FlightPrice.price).label("avg_price"),
-                func.count(FlightPrice.price).label("sample_count"),
+                func.count().label("sample_count"),
             )
             .where(
                 FlightPrice.route_id == route_id,
@@ -51,4 +46,13 @@ class FlightPriceRepository:
             .group_by(FlightPrice.currency)
             .order_by(FlightPrice.currency)
         )
-        return [dict(row._mapping) for row in self._db.execute(query)]
+        return [
+            PriceAggregate(
+                currency=row.currency,
+                min_price=row.min_price,
+                max_price=row.max_price,
+                avg_price=row.avg_price,
+                sample_count=row.sample_count,
+            )
+            for row in self._db.execute(query)
+        ]

@@ -1,28 +1,20 @@
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
 from app.models.user import User
+from app.repositories.base_repository import BaseRepository
 
 
-class UserRepository:
-    def __init__(self, db: Session) -> None:
-        self._db = db
+class UserRepository(BaseRepository[User]):
+    model = User
 
     def get_by_email(self, email: str) -> User | None:
-        stmt = select(User).where(User.email == email)
-        return self._db.execute(stmt).scalar_one_or_none()
+        return self._db.execute(select(User).where(User.email == email)).scalar_one_or_none()
 
-    def get_by_id(self, user_id: str) -> User | None:
-        return self._db.get(User, user_id)
-
-    def add(self, user: User) -> User | None:
-        self._db.add(user)
+    def try_add(self, user: User) -> User | None:
+        """Add a user - return None if the email is already taken."""
         try:
-            self._db.commit()
+            return self.add(user)
         except IntegrityError:
             self._db.rollback()
             return None
-
-        self._db.refresh(user)
-        return user

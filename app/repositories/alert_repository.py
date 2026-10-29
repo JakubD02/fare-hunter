@@ -1,21 +1,16 @@
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import Select, select
 
 from app.models.price_alert import PriceAlert
 from app.models.route import Route
 from app.models.user import User
+from app.repositories.base_repository import BaseRepository
 
 
-class AlertRepository:
-    def __init__(self, db: Session) -> None:
-        self._db = db
+class AlertRepository(BaseRepository[PriceAlert]):
+    model = PriceAlert
 
     def get_for_route(self, user: User, route_id: str) -> PriceAlert | None:
-        query = (
-            select(PriceAlert)
-            .join(Route, PriceAlert.route_id == Route.id)
-            .where(Route.id == route_id, Route.user_id == user.id)
-        )
+        query = self._owned_by(user).where(PriceAlert.route_id == route_id)
         return self._db.execute(query).scalar_one_or_none()
 
     def get_route_by_id(self, user: User, alert_id: str) -> PriceAlert | None:
@@ -27,24 +22,12 @@ class AlertRepository:
         return self._db.scalar(query)
 
     def get_active_by_route_id(self, route_id: str) -> PriceAlert | None:
-        return self._db.scalar(
-            select(PriceAlert).where(
-                PriceAlert.route_id == route_id,
-                PriceAlert.is_active.is_(True),
-            )
+        query = select(PriceAlert).where(
+            PriceAlert.route_id == route_id,
+            PriceAlert.is_active.is_(True),
         )
+        return self._db.execute(query).scalar_one_or_none()
 
-    def add(self, alert: PriceAlert) -> PriceAlert:
-        self._db.add(alert)
-        self._db.commit()
-        self._db.refresh(alert)
-        return alert
-
-    def save(self, alert: PriceAlert) -> PriceAlert:
-        self._db.commit()
-        self._db.refresh(alert)
-        return alert
-
-    def delete(self, alert: PriceAlert) -> None:
-        self._db.delete(alert)
-        self._db.commit()
+    def _owned_by(self, user: User) -> Select[PriceAlert]:
+        """Alerts on routes that belong to the given user."""
+        return select(PriceAlert).join(Route, PriceAlert.route_id == Route.id).where(Route.user_id == user.id)
