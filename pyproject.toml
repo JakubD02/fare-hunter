@@ -90,3 +90,6 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 module = "tests.*"
 ignore_errors = true
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]

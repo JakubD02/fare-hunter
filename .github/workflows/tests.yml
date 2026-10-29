@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 on:
   push:
@@ -50,7 +50,9 @@ jobs:
           python-version: "3.12"
 
       - name: Install uv
-        run: pip install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
 
       - name: Install dependencies
         run: uv sync --frozen
@@ -64,9 +66,6 @@ jobs:
       - name: Run mypy type check
         run: uv run mypy app
 
-      - name: Run Bandit security analysis
-        run: uv run bandit -r app -f json -o bandit-report.json || true
-
       - name: Run Alembic migrations
         run: uv run alembic upgrade head
 
@@ -76,6 +75,18 @@ jobs:
       - name: Run pytest
         run: uv run pytest
 
+  bandit:
+    name: Static security analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Run Bandit
+        run: uvx --from "bandit[toml]" bandit -r app
 
   audit-dependencies:
     name: Audit dependencies for vulnerabilities
@@ -90,7 +101,9 @@ jobs:
           python-version: "3.12"
 
       - name: Install uv
-        run: pip install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
 
       - name: Install dependencies
         run: uv sync --frozen
@@ -99,15 +112,15 @@ jobs:
         run: uv run pip-audit --skip-editable
 
   detect-secrets:
-      name: Detect hardcoded secrets
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 0
+    name: Detect hardcoded secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-        - name: Run Gitleaks
-          uses: gitleaks/gitleaks-action@v2
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

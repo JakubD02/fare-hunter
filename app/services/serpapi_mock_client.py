@@ -15,7 +15,7 @@ class SerpApiMockClient:
         if not airline_names:
             raise ValueError("airline_names cannot be empty")
         self._airline_names = airline_names
-        self._rng = random.Random(seed)
+        self._rng = random.Random(seed)  # nosec B311 - mock price data, not security-sensitive
         logger.info("mock flight client ready airlines=%s seed=%s", airline_names, seed)
 
     def fetch_offers(
