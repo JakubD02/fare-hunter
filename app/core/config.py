@@ -1,4 +1,3 @@
-import os
 from typing import ClassVar
 
 from celery.schedules import crontab
@@ -85,7 +84,7 @@ class PaginationConfig(BaseModel):
 
 class Settings(BaseSettings):
     # database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./fare_hunter.db")
+    DATABASE_URL: str = "postgresql+psycopg2://postgres:postgres@localhost:5434/fare_hunter"
 
     # redis & celery
     REDIS_URL: str = "redis://localhost:6379/0"

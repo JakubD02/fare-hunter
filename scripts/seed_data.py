@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -5,10 +7,12 @@ from app.core.database import engine
 from app.models import Airline, Airport
 from data import AIRLINES_DATA, AIRPORTS_DATA
 
+logger = logging.getLogger(__name__)
+
 
 def seed_airports(db: Session):
     if db.execute(select(Airport)).scalars().first():
-        print("Airports already seeded, skipping")
+        logger.debug("Airports already seeded, skipping")
         return
 
     airports = [Airport(**data) for data in AIRPORTS_DATA]
@@ -18,7 +22,7 @@ def seed_airports(db: Session):
 
 def seed_airlines(db: Session):
     if db.execute(select(Airline)).scalars().first():
-        print("Airlines already seeded, skipping")
+        logger.debug("Airlines already seeded, skipping")
         return
 
     airlines = [Airline(**data) for data in AIRLINES_DATA]

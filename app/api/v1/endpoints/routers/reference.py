@@ -1,28 +1,17 @@
-from typing import Annotated
+from fastapi import APIRouter
 
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-
-from app.api.v1.dependencies import PaginationDep
+from app.api.v1.dependencies import PaginationDep, ReferenceServiceDep
 from app.api.v1.schemas.airline import AirlineRead
 from app.api.v1.schemas.airport import AirportRead
-from app.core.database import get_db
-from app.repositories.airline_repository import AirlineRepository
-from app.repositories.airport_repository import AirportRepository
-from app.services.reference_service import ReferenceService
 
 router = APIRouter(tags=["reference"])
 
-db_dependency = Annotated[Session, Depends(get_db)]
-
 
 @router.get("/airports", response_model=list[AirportRead])
-def list_airports(db: db_dependency, page: PaginationDep):
-    service = ReferenceService(airports=AirportRepository(db), airlines=AirlineRepository(db))
+def list_airports(service: ReferenceServiceDep, page: PaginationDep):
     return service.list_airports(limit=page.limit, offset=page.offset)
 
 
 @router.get("/airlines", response_model=list[AirlineRead])
-def list_airlines(db: db_dependency, page: PaginationDep):
-    service = ReferenceService(airports=AirportRepository(db), airlines=AirlineRepository(db))
+def list_airlines(service: ReferenceServiceDep, page: PaginationDep):
     return service.list_airlines(limit=page.limit, offset=page.offset)

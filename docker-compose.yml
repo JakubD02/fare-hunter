@@ -2,30 +2,36 @@ services:
   app:
     build: .
     ports: ["8000:8000"]
-    volumes: [".:/app"]
+    volumes: [".:/app", "/app/.venv"]
     env_file: [.env]
     environment:
       - REDIS_URL=redis://redis:6379/0
       - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/fare_hunter
-    depends_on: [db, redis]
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
     command: sh -c "uv run alembic upgrade head && uv run python init_db.py && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
   worker:
     build: .
-    volumes: [".:/app"]
+    volumes: [".:/app", "/app/.venv"]
     env_file: [.env]
     environment:
       - REDIS_URL=redis://redis:6379/0
       - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/fare_hunter
-    depends_on: [db, redis]
+    depends_on:
+        db: { condition: service_healthy }
+        redis: { condition: service_healthy }
     command: uv run celery -A app.celery_app worker --loglevel=INFO
   beat:
     build: .
-    volumes: [".:/app"]
+    volumes: [".:/app", "/app/.venv"]
     env_file: [.env]
     environment:
       - REDIS_URL=redis://redis:6379/0
       - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/fare_hunter
-    depends_on: [db, redis]
+    depends_on:
+        db: { condition: service_healthy }
+        redis: { condition: service_healthy }
     command: uv run celery -A app.celery_app beat --loglevel=INFO
   db:
     image: postgres:16-alpine
@@ -35,11 +41,21 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: fare_hunter
     volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fare_hunter"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
 
   redis:
     image: redis:7-alpine
     ports: ["6379:6379"]
     volumes: [redis_data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
 
 volumes:
   postgres_data:
