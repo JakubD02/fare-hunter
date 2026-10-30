@@ -42,3 +42,4 @@ alembic/versions/__pycache__/
 build/
 dist/
 *.egg-info/
+bandit-report.json
