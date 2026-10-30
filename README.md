@@ -17,9 +17,10 @@ A FastAPI flight price tracker with price alerts and email notifications. Track 
 - ✅ **Price alerts**: set a threshold and get notified when the price drops below it, with a 24h cooldown
 - ✅ **Statistics & history**: min / max / average price per route and paginated price history
 - ✅ **Currency conversion**: `/currency/convert` endpoint with live exchange rates
+- ✅ **Web frontend**: NiceGUI app for registration, login, route management, stats and price alerts
 - ✅ **Email notifications**: SendGrid for alert confirmations and price-drop emails
 - ✅ **Celery Beat**: scheduled price fetch every 8 hours, with retries on SerpAPI rate limits and 5xx errors
-- ✅ **Docker Compose**: API, worker, beat, PostgreSQL and Redis, started in the right order via healthchecks
+- ✅ **Docker Compose**: API, worker, beat, frontend, PostgreSQL and Redis, started in the right order via healthchecks
 
 ---
 
@@ -100,6 +101,8 @@ fare-hunter/
 │   │   └── price_tasks.py
 │   ├── celery_app.py
 │   └── main.py                         # FastAPI app entry point
+├── ui/
+│   └── main.py                         # NiceGUI frontend (talks to the API over HTTP)
 ├── alembic/                            # Database migrations
 │   ├── env.py
 │   └── versions/
@@ -300,6 +303,9 @@ APP_URL=http://localhost:8000
 # App
 APP_ENV=development
 LOG_LEVEL=DEBUG
+
+# Frontend (NiceGUI) session cookie signing key, required by the app settings
+NICEGUI_STORAGE_SECRET=your-random-secret-here
 ```
 
 The values above point to the services exposed by Docker Compose (PostgreSQL on port `5434`, Redis on `6379`), so you can run the API locally against the containers. Inside Compose, `DATABASE_URL` and `REDIS_URL` are overridden to use the service names (`db`, `redis`).
@@ -312,6 +318,26 @@ from app.core.config import settings
 settings.airline.iata_code_length  # 2
 settings.user_config.password_max_length  # 72
 ```
+---
+
+## 🖥️ Frontend (NiceGUI)
+
+A small web UI lives in `ui/main.py`. It talks to the API over HTTP, so it can run next to the API or against any reachable instance.
+
+Features:
+
+- Register and log in (the password hint is only shown while registering)
+- List your routes, 5 per page, and delete them (currently a limit of 3 per user)
+- Add a route with date pickers: departure from tomorrow on, return at least one day after departure, origin and destination must differ, and the form resets after a successful add
+- Route details with min / average / max prices, price history and a price alert (set, update, deactivate, delete)
+
+Run it locally (the API must be running):
+
+```bash
+API_URL=http://localhost:8000 uv run python ui/main.py
+```
+
+Then open http://localhost:8080. With Docker Compose, the `ui` service is started on port 8080 and reaches the API at `http://app:8000` inside the network.
 
 ---
 
@@ -380,6 +406,7 @@ docker compose up --build -V           # rebuild after changing dependencies
 docker compose logs -f app             # API logs
 docker compose logs -f worker          # Celery worker logs
 docker compose logs -f beat            # Celery Beat logs
+docker compose logs -f ui              # Frontend logs
 docker compose exec db psql -U postgres -d fare_hunter
 ```
 
@@ -440,6 +467,7 @@ uv run alembic downgrade -1
 - [x] Service factories shared by the API and Celery tasks
 - [x] SerpAPI flight price provider
 - [x] CI with tests, type checking and security scanning
+- [x] NiceGUI frontend for routes, stats and alerts
 - [ ] Advanced analytics (price trends, best time to buy)
 - [ ] Multiple alert types (availability, schedule changes)
 - [ ] Deployment
