@@ -33,6 +33,16 @@ services:
         db: { condition: service_healthy }
         redis: { condition: service_healthy }
     command: uv run celery -A app.celery_app beat --loglevel=INFO
+  ui:
+    build: .
+    ports: ["8080:8080"]
+    volumes: [".:/app", "/app/.venv"]
+    env_file: [.env]
+    environment:
+      - API_URL=http://app:8000
+    depends_on:
+      - app
+    command: uv run python ui/main.py
   db:
     image: postgres:16-alpine
     ports:
