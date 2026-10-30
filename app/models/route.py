@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import Enum as StrEnum
+from sqlalchemy import Enum as StrEnum, UniqueConstraint
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,3 +31,7 @@ class Route(BaseModel):
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     origin_airport: Mapped["Airport"] = relationship(foreign_keys=[origin_id])
     destination_airport: Mapped["Airport"] = relationship(foreign_keys=[destination_id])
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "origin_id", "destination_id", name="uq_route_user_origin_destination"),
+    )

@@ -39,6 +39,10 @@ class AirportConfig(BaseModel):
     # Country code (Exactly 2 letters e.g. "PL", "GB", "US")
     country_code_length: int = 2
 
+class RouteConfig(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    max_routes_per_user: int = 3
 
 class MockConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -98,6 +102,7 @@ class Settings(BaseSettings):
     # constants
     airline: AirlineConfig = AirlineConfig()
     airports: AirportConfig = AirportConfig()
+    route: RouteConfig = RouteConfig()
     mock: MockConfig = MockConfig()
     price: PriceConfig = PriceConfig()
     user_config: UserConfig = UserConfig()
@@ -123,6 +128,9 @@ class Settings(BaseSettings):
             "schedule": crontab(minute=0, hour="*/8"),
         }
     }
+
+    # UI (NiceGUI)
+    NICEGUI_STORAGE_SECRET: str
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

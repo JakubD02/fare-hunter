@@ -7,6 +7,7 @@ from app.models.route import Route
 from app.models.user import User
 from app.repositories.airport_repository import AirportRepository
 from app.repositories.route_repository import RouteRepository
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,13 @@ class RouteService:
         origin = self._get_airport(route_in.origin_id)
         destination = self._get_airport(route_in.destination_id)
         self._validate_airports_different(origin, destination)
+        if self._routes.count_for_user(user.id) >= settings.route.max_routes_per_user:
+            logger.warning("route rejected: limit reached user_id=%s", user.id)
+            raise ValueError(f"You can track at most {settings.route.max_routes_per_user} routes.")
+
+        if self._routes.exists_for_pair(user.id, origin.id, destination.id):
+            logger.warning("route rejected: duplicate user_id=%s %s->%s", user.id, origin.id, destination.id)
+            raise ValueError("You are already tracking this route.")
 
         route = Route(
             user_id=user.id,
