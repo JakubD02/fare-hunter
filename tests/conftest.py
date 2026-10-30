@@ -57,7 +57,7 @@ def other_user_data():
     return {
         "first_name": "other",
         "email": "other@gmail.com",
-        "password": "other1234",
+        "password": "Other1234!",
     }
 
 
@@ -66,7 +66,7 @@ def user_data():
     return {
         "first_name": "test",
         "email": "test@gmail.com",
-        "password": "test1234",
+        "password": "Test1234!",
     }
 
 

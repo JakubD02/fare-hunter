@@ -68,7 +68,7 @@ def test_register_with_additional_field(client):
         "/auth/register",
         json={
             "email": "user@gmail.com",
-            "password": "user1234",
+            "password": "User1234!",
             "first_name": "user",
             "is_protected": True,
         },

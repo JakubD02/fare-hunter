@@ -39,10 +39,12 @@ class AirportConfig(BaseModel):
     # Country code (Exactly 2 letters e.g. "PL", "GB", "US")
     country_code_length: int = 2
 
+
 class RouteConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     max_routes_per_user: int = 3
+
 
 class MockConfig(BaseModel):
     model_config = ConfigDict(frozen=True)

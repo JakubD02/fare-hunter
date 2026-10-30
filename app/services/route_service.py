@@ -2,12 +2,12 @@ import logging
 from datetime import date
 
 from app.api.v1.schemas.route import RouteCreate, RouteUpdate
+from app.core.config import settings
 from app.models.airport import Airport
 from app.models.route import Route
 from app.models.user import User
 from app.repositories.airport_repository import AirportRepository
 from app.repositories.route_repository import RouteRepository
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

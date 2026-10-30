@@ -205,10 +205,14 @@ def login_page():
 
     with ui.card().classes("absolute-center w-96"):
         ui.label("Fare Hunter").classes("text-2xl")
-        email = ui.input(
-            "Email",
-            validation={"Enter a valid email address": lambda v: "@" in v},
-        ).props("type=email").classes("w-full")
+        email = (
+            ui.input(
+                "Email",
+                validation={"Enter a valid email address": lambda v: "@" in v},
+            )
+            .props("type=email")
+            .classes("w-full")
+        )
         password = ui.input("Password", password=True, password_toggle_button=True).classes("w-full")
 
         with ui.column().classes("w-full") as register_fields:
@@ -233,7 +237,7 @@ def routes_page():
 
     airports = fetch_all("/airports")
     codes = {a["id"]: a["iata_code"] for a in airports}
-    options = {a["id"]: f'{a["iata_code"]} – {a["city"]}' for a in airports}
+    options = {a["id"]: f"{a['iata_code']} – {a['city']}" for a in airports}
 
     page = {"index": 0}
     routes_box = ui.column().classes("w-full")
@@ -280,7 +284,7 @@ def routes_page():
                 next_button.set_enabled(has_next)
 
     def set_min_day(picker: ui.date, min_day: date):
-        picker.props(f':options="(d) => d >= \'{min_day:%Y/%m/%d}\'"')
+        picker.props(f":options=\"(d) => d >= '{min_day:%Y/%m/%d}'\"")
 
     def date_input(label: str, min_day: date):
         with ui.input(label).classes("w-full").props("readonly") as field:
