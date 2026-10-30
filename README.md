@@ -46,43 +46,6 @@ A FastAPI flight price tracker with price alerts and email notifications. Track 
 
 ---
 
-## 🧱 Architecture
-
-```mermaid
-flowchart LR
-    Client -->|HTTP| Routers
-    subgraph API["FastAPI"]
-        Routers -->|Depends| Deps[api dependencies]
-    end
-    subgraph Workers["Celery"]
-        Beat -->|every 8h| PriceTasks[price_tasks]
-        PriceTasks --> EmailTasks[email_tasks]
-    end
-    Deps --> Factories[services/factories.py]
-    PriceTasks --> Factories
-    EmailTasks --> Factories
-    Factories --> Services
-    Services --> Repositories
-    Repositories --> DB[(PostgreSQL)]
-    PriceTasks -->|fetch offers| SerpAPI
-    EmailTasks -->|send| SendGrid
-    Routers -->|.delay| Redis[(Redis)]
-    Redis --> PriceTasks
-```
-
-The code is split into layers, each with one job:
-
-| Layer | Location | Responsibility |
-|-------|----------|----------------|
-| Routers | `app/api/v1/endpoints/routers/` | HTTP only: parse the request, call a service, map the result to a status code |
-| Dependencies | `app/api/v1/dependencies.py` | FastAPI `Depends` providers: DB session per request, pagination, services |
-| Factories | `app/services/factories.py` | Framework-agnostic service composition, shared by the API and Celery tasks |
-| Services | `app/services/` | Business logic and rules (ownership checks, alert rules, validation) |
-| Repositories | `app/repositories/` | Database access only. `BaseRepository[ModelT]` provides generic CRUD |
-| Tasks | `app/tasks/` | Background jobs: price fetching and emails |
-
----
-
 ## 📋 Project Structure
 
 ```
