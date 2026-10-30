@@ -14,6 +14,7 @@ jobs:
       JWT_SECRET_KEY: test-secret-key
       SENDGRID_API_KEY: test-key
       SERPAPI_KEY: test-key
+      NICEGUI_STORAGE_SECRET: test-storage-secret
       APP_URL: http://localhost:8000
     services:
       postgres:
