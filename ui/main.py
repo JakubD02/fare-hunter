@@ -276,7 +276,9 @@ def routes_page():
                         ui.button("Details", on_click=lambda rid=r["id"]: ui.navigate.to(f"/routes/{rid}"))
                         ui.button("Delete", color="negative", on_click=lambda rid=r["id"]: remove(rid))
 
-            with ui.row().classes("w-full items-center justify-between"):
+            pager = ui.row().classes("w-full items-center justify-between")
+            pager.set_visibility(page["index"] > 0 or has_next)
+            with pager:
                 prev_button = ui.button("← Previous", on_click=lambda: change_page(-1)).props("flat")
                 prev_button.set_enabled(page["index"] > 0)
                 ui.label(f"Page {page['index'] + 1}")
