@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from app.models.user import User
@@ -9,7 +9,7 @@ class UserRepository(BaseRepository[User]):
     model = User
 
     def get_by_email(self, email: str) -> User | None:
-        return self._db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+        return self._db.execute(select(User).where(func.lower(User.email) == email.lower())).scalar_one_or_none()
 
     def try_add(self, user: User) -> User | None:
         """Add a user - return None if the email is already taken."""

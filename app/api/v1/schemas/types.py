@@ -2,7 +2,7 @@ from decimal import Decimal
 from typing import Annotated
 
 from fastapi import Query
-from pydantic import EmailStr, Field, StringConstraints
+from pydantic import AfterValidator, EmailStr, Field, StringConstraints
 
 from app.core.config import settings
 
@@ -98,8 +98,14 @@ FirstName = Annotated[
     ),
 ]
 
+
+def _normalize_email(value: str) -> str:
+    return value.lower()
+
+
 Email = Annotated[
     EmailStr,
+    AfterValidator(_normalize_email),
     Field(max_length=settings.user_config.email_max_length),
 ]
 
