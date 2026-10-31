@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.repositories.airline_repository import AirlineRepository
 from app.repositories.airport_repository import AirportRepository
 from app.repositories.alert_repository import AlertRepository
@@ -14,8 +15,6 @@ from app.services.reference_service import ReferenceService
 from app.services.route_service import RouteService
 from app.services.serpapi_provider import SerpApiFlightProvider
 from app.services.user_service import UserService
-from app.core.config import settings
-
 
 
 def build_user_service(db: Session) -> UserService:
@@ -34,15 +33,12 @@ def build_alert_service(db: Session) -> AlertService:
     return AlertService(alerts=AlertRepository(db), routes=build_route_service(db))
 
 
-def build_flight_price_service(
-    db: Session, provider: FlightPriceProvider | None = None
-) -> FlightPriceService:
+def build_flight_price_service(db: Session, provider: FlightPriceProvider | None = None) -> FlightPriceService:
     return FlightPriceService(
         prices=FlightPriceRepository(db),
         airlines=AirlineRepository(db),
         routes=build_route_service(db),
-        provider=provider
-        or SerpApiFlightProvider(api_key=settings.SERPAPI_KEY, base_url=settings.SERPAPI_URL),
+        provider=provider or SerpApiFlightProvider(api_key=settings.SERPAPI_KEY, base_url=settings.SERPAPI_URL),
     )
 
 
