@@ -8,7 +8,7 @@ from app.celery_app import celery_app
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.models.flight_price import FlightPrice
-from app.services.factories import build_alert_service, build_reference_service, build_route_service, build_user_service
+from app.services.factories import build_alert_service, build_flight_price_service, build_reference_service, build_route_service, build_user_service
 from app.services.serpapi_provider import SerpApiFlightProvider
 from app.tasks.email_tasks import send_price_drop_email_task
 
@@ -24,56 +24,31 @@ def fetch_prices_for_route(self, route_id: str, user_id: str) -> int:
         if user is None:
             logger.warning("User not found: %s", user_id)
             return 0
+        
         route = build_route_service(db).get_route(user=user, route_id=route_id)
-
         if route is None or not route.is_active:
             logger.warning("Failed to enqueue price fetch: route_id=%s user_id=%s", route_id, user_id)
             return 0
 
-        provider = SerpApiFlightProvider(api_key=settings.SERPAPI_KEY, base_url=settings.SERPAPI_URL)
-        offers = provider.fetch_offers(
-            origin_code=route.origin_airport.iata_code,
-            destination_code=route.destination_airport.iata_code,
-            departure_date=route.departure_date,
-            return_date=route.return_date,
-            currency=route.currency,
-        )
-        if not offers:
-            logger.warning("No offers for route %s", route_id)
+        flight_price = build_flight_price_service(db)
+        if flight_price is None:
+            logger.warning("No price saved for route %s", route_id)
             return 0
-
-        best = min(offers, key=lambda offer: offer["price"])
-
-        airline_id = build_reference_service(db).find_airline_id(best["airline"])
-
-        if airline_id is None:
-            logger.warning("Unknown airline %r for route %s", best["airline"], route_id)
-            return 0
-
-        flight_price = FlightPrice(
-            route_id=route.id,
-            airline_id=airline_id,
-            price=Decimal(str(best["price"])),
-            currency=best["currency"],
-            departure_date=route.departure_date,
-            return_date=route.return_date,
-        )
-        db.add(flight_price)
 
         should_send = build_alert_service(db).check_price(
             route=route, flight_price=flight_price, now=datetime.now(timezone.utc)
         )
         db.commit()
 
-        if should_send:
-            send_price_drop_email_task.delay(
-                route_id=str(route.id),
-                user_id=str(route.user_id),
-                price=str(flight_price.price),
-            )
+    if should_send:
+        send_price_drop_email_task.delay(
+            route_id=str(route.id),
+            user_id=str(route.user_id),
+            price=str(flight_price.price),
+        )
 
-        logger.info("Saved price %s %s for route %s", flight_price.price, flight_price.currency, route_id)
-        return 1
+    logger.info("Saved price %s %s for route %s", flight_price.price, flight_price.currency, route_id)
+    return 1
 
 
 @celery_app.task

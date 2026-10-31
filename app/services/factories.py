@@ -8,10 +8,14 @@ from app.repositories.route_repository import RouteRepository
 from app.repositories.user_repository import UserRepository
 from app.services.alert_service import AlertService
 from app.services.auth_service import AuthService
+from app.services.flight_price_provider import FlightPriceProvider
 from app.services.flight_price_service import FlightPriceService
 from app.services.reference_service import ReferenceService
 from app.services.route_service import RouteService
+from app.services.serpapi_provider import SerpApiFlightProvider
 from app.services.user_service import UserService
+from app.core.config import settings
+
 
 
 def build_user_service(db: Session) -> UserService:
@@ -30,11 +34,15 @@ def build_alert_service(db: Session) -> AlertService:
     return AlertService(alerts=AlertRepository(db), routes=build_route_service(db))
 
 
-def build_flight_price_service(db: Session) -> FlightPriceService:
+def build_flight_price_service(
+    db: Session, provider: FlightPriceProvider | None = None
+) -> FlightPriceService:
     return FlightPriceService(
         prices=FlightPriceRepository(db),
         airlines=AirlineRepository(db),
         routes=build_route_service(db),
+        provider=provider
+        or SerpApiFlightProvider(api_key=settings.SERPAPI_KEY, base_url=settings.SERPAPI_URL),
     )
 
 
