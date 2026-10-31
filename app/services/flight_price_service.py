@@ -83,8 +83,8 @@ class FlightPriceService:
         )
 
         offers = self._provider.fetch_offers(
-            origin_code=route.origin_id,
-            destination_code=route.destination_id,
+            origin_code=route.origin_airport.iata_code,
+            destination_code=route.destination_airport.iata_code,
             departure_date=route.departure_date,
             return_date=route.return_date,
         )
