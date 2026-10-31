@@ -36,7 +36,7 @@ def fetch_prices_for_route(self, route_id: str, user_id: str) -> int:
             return 0
 
         prices = build_flight_price_service(db).refresh_prices(user=user, route_id=route.id)
-        if prices is None:
+        if not prices:
             logger.warning("No price saved for route %s", route_id)
             return 0
 

@@ -1,3 +1,6 @@
+import logging
+from sqlite3 import OperationalError
+
 from fastapi import APIRouter, HTTPException
 from starlette import status
 
@@ -5,6 +8,8 @@ from app.api.auth import CurrentUser
 from app.api.v1.dependencies import PaginationDep, RouteServiceDep
 from app.api.v1.schemas.route import RouteCreate, RouteRead, RouteUpdate
 from app.tasks.price_tasks import fetch_prices_for_route
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/routes", tags=["routes"])
 
@@ -23,7 +28,14 @@ def create_route(service: RouteServiceDep, current_user: CurrentUser, route_in: 
     except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-    fetch_prices_for_route.delay(route_id=route.id, user_id=str(current_user.id))
+    try:
+        fetch_prices_for_route.delay(route_id=route.id, user_id=str(current_user.id))
+    except OperationalError:
+        logger.exception(
+            "Failed to enqueue initial price fetch: route_id=%s user_id=%s",
+            route.id,
+            current_user.id,
+        )
 
     return route
 
