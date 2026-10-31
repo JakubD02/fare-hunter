@@ -87,6 +87,7 @@ class FlightPriceService:
             destination_code=route.destination_airport.iata_code,
             departure_date=route.departure_date,
             return_date=route.return_date,
+            currency=route.currency,
         )
         if not offers:
             logger.warning("refresh got no offers route_id=%s", route_id)

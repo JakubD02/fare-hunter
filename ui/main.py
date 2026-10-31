@@ -9,6 +9,7 @@ from app.core.config import settings
 API_URL = "http://localhost:8000"
 
 ROUTES_PER_PAGE = 5
+CURRENCIES = ["PLN", "EUR", "USD", "GBP"]
 
 FIELD_LABELS = {
     "first_name": "First name",
@@ -125,6 +126,20 @@ def format_price(value, currency: str) -> str:
     return f"{float(value):,.2f}".replace(",", " ") + f" {currency}"
 
 
+def convert_hint(amount, base: str, quote: str = "PLN") -> str:
+    if amount is None or base == quote:
+        return ""
+    data = call(
+        "GET",
+        "/currency/convert",
+        params={"amount": amount, "base": base, "quote": quote},
+        notify=False,
+    )
+    if not data:
+        return ""
+    return f"≈ {data['result']:,.2f} {quote}"
+
+
 def show_stats(stats: dict | None):
     if not stats or not stats.get("sample_count"):
         ui.label("No data yet, wait for the first price fetch").classes("text-grey-7")
@@ -149,6 +164,24 @@ def show_history(history):
         ui.table(columns=columns, rows=history).classes("w-full")
     else:
         ui.code(json.dumps(history, indent=2, ensure_ascii=False), language="json")
+
+
+def set_min_day(picker: ui.date, min_day: date):
+    picker.props(f":options=\"(d) => d >= '{min_day:%Y/%m/%d}'\"")
+
+
+def date_input(label: str, min_day: date, value: str = ""):
+    with ui.input(label, value=value).classes("w-full").props("readonly") as field:
+        with ui.menu().props("no-parent-event") as menu:
+            with ui.date().bind_value(field) as picker:
+                with ui.row().classes("justify-end"):
+                    ui.button("OK", on_click=menu.close).props("flat")
+        set_min_day(picker, min_day)
+        field.on("click", menu.open)
+        with field.add_slot("append"):
+            ui.icon("close").on("click", lambda: field.set_value("")).classes("cursor-pointer q-mr-xs")
+            ui.icon("edit_calendar").classes("cursor-pointer")
+    return field, picker
 
 
 @ui.page("/login")
@@ -271,7 +304,12 @@ def routes_page():
                     origin_code = codes.get(r["origin_id"], "?")
                     destination_code = codes.get(r["destination_id"], "?")
                     ui.label(f"{origin_code} → {destination_code}").classes("text-lg")
-                    ui.label(f"Departure: {r['departure_date']}   Return: {r['return_date'] or '-'}")
+
+                    details = f"Departure: {r['departure_date']}"
+                    if r["return_date"]:
+                        details += f"   Return: {r['return_date']}"
+                    ui.label(details)
+
                     with ui.row():
                         ui.button("Details", on_click=lambda rid=r["id"]: ui.navigate.to(f"/routes/{rid}"))
                         ui.button("Delete", color="negative", on_click=lambda rid=r["id"]: remove(rid))
@@ -285,25 +323,10 @@ def routes_page():
                 next_button = ui.button("Next →", on_click=lambda: change_page(1)).props("flat")
                 next_button.set_enabled(has_next)
 
-    def set_min_day(picker: ui.date, min_day: date):
-        picker.props(f":options=\"(d) => d >= '{min_day:%Y/%m/%d}'\"")
-
-    def date_input(label: str, min_day: date):
-        with ui.input(label).classes("w-full").props("readonly") as field:
-            with ui.menu().props("no-parent-event") as menu:
-                with ui.date().bind_value(field) as picker:
-                    with ui.row().classes("justify-end"):
-                        ui.button("OK", on_click=menu.close).props("flat")
-            set_min_day(picker, min_day)
-            field.on("click", menu.open)
-            with field.add_slot("append"):
-                ui.icon("close").on("click", lambda: field.set_value("")).classes("cursor-pointer q-mr-xs")
-                ui.icon("edit_calendar").classes("cursor-pointer")
-        return field, picker
-
     with ui.expansion("Add new route", icon="add").classes("w-full"):
         origin = ui.select(options, label="From", with_input=True).classes("w-full")
         destination = ui.select(options, label="To", with_input=True).classes("w-full")
+        currency = ui.select(CURRENCIES, value="PLN", label="Currency").classes("w-full")
         departure, _ = date_input("Departure", first_departure)
         returning, return_picker = date_input("Return (optional)", first_departure + timedelta(days=1))
         returning.disable()
@@ -327,6 +350,7 @@ def routes_page():
         def reset_form():
             origin.set_value(None)
             destination.set_value(None)
+            currency.set_value("PLN")
             departure.set_value("")
             returning.set_value("")
 
@@ -353,6 +377,7 @@ def routes_page():
                 "destination_id": destination.value,
                 "departure_date": departure.value,
                 "return_date": returning.value or None,
+                "currency": currency.value,
             }
             if call("POST", "/routes/", json=body) is not None:
                 ui.notify("Route added", type="positive")
@@ -372,6 +397,37 @@ def route_page(route_id: str):
     frame("Route details")
     ui.button("← Back", on_click=lambda: ui.navigate.to("/")).props("flat")
 
+    route = call("GET", f"/routes/{route_id}", notify=False)
+    if route is None:
+        ui.label("Route not found")
+        return
+
+    today = date.today()
+    with ui.card().classes("w-full"):
+        ui.label("Dates and currency").classes("text-lg")
+        departure, _ = date_input("Departure", today + timedelta(days=1), route["departure_date"])
+        returning, _ = date_input("Return (optional)", today + timedelta(days=2), route["return_date"] or "")
+        currency = ui.select(CURRENCIES, value=route["currency"], label="Currency").classes("w-full")
+
+        def save_route():
+            dep = parse_date(departure.value)
+            if dep is None or dep <= today:
+                ui.notify("Select a departure date from tomorrow onwards", type="warning")
+                return
+            ret = parse_date(returning.value)
+            if returning.value and (ret is None or ret <= dep):
+                ui.notify("Return must be at least one day after departure", type="warning")
+                return
+            body = {
+                "departure_date": departure.value,
+                "return_date": returning.value or None,
+                "currency": currency.value,
+            }
+            if call("PATCH", f"/routes/{route_id}", json=body) is not None:
+                ui.notify("Route updated", type="positive")
+
+        ui.button("Save changes", on_click=save_route)
+
     alert_state = {"exists": False}
 
     with ui.row().classes("w-full items-start"):
@@ -383,7 +439,15 @@ def route_page(route_id: str):
 
         with ui.card().classes("w-1/3"):
             ui.label("Price alert").classes("text-lg")
-            threshold = ui.number("Threshold (PLN)", min=1).classes("w-full")
+            threshold = ui.number(f"Threshold ({route['currency']})", min=1).classes("w-full")
+            hint = ui.label("").classes("text-caption text-grey-7")
+            threshold.on_value_change(lambda e: hint.set_text(convert_hint(e.value, currency.value)))
+            currency.on_value_change(
+                lambda e: (
+                    threshold.props(f'label="Threshold ({e.value})"'),
+                    hint.set_text(convert_hint(threshold.value, e.value)),
+                )
+            )
             active = ui.switch("Active", value=True)
 
             def save_alert():
