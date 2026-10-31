@@ -7,9 +7,11 @@ from sqlalchemy.orm import Session
 from app.celery_app import celery_app
 from app.core.database import SessionLocal
 from app.core.exceptions import EmailSendError
+from app.enums.currency import Currency
 from app.models.price_alert import PriceAlert
 from app.models.route import Route
 from app.models.user import User
+from app.services.alert_rules import should_notify
 from app.services.email_service import AlertAction, EmailService
 from app.services.factories import build_alert_service, build_route_service, build_user_service
 
@@ -67,12 +69,17 @@ def send_alert_confirmation_email_task(self, route_id: str, user_id: str, action
 
 
 @celery_app.task(bind=True, **EMAIL_RETRY_OPTIONS)
-def send_price_drop_email_task(self, route_id: str, user_id: str, price: str) -> int:
+def send_price_drop_email_task(self, route_id: str, user_id: str, price: str, price_currency: str) -> int:
     with SessionLocal() as db:
         context = _load_alert_context(db, user_id, route_id)
         if context is None:
             return 0
         user, alert, route = context
+
+        now = datetime.now(timezone.utc)
+        if not should_notify(alert, Decimal(price), Currency(price_currency), route.currency, now):
+            logger.info("Price drop email skipped route_id=%s user_id=%s", route_id, user_id)
+            return 0
 
         EmailService().send_price_drop_notification(
             to_email=user.email,
@@ -81,8 +88,6 @@ def send_price_drop_email_task(self, route_id: str, user_id: str, price: str) ->
             threshold=alert.threshold_price,
             currency=route.currency.value,
         )
-
-        now = datetime.now(timezone.utc)
 
         build_alert_service(db).mark_notified(alert, now)
 

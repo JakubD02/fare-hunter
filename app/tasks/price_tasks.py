@@ -51,6 +51,7 @@ def fetch_prices_for_route(self, route_id: str, user_id: str) -> int:
             route_id=str(route.id),
             user_id=str(route.user_id),
             price=str(flight_price.price),
+            price_currency=flight_price.currency.value,
         )
 
     logger.info("Saved price %s %s for route %s", flight_price.price, flight_price.currency, route_id)

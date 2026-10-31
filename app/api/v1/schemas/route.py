@@ -53,6 +53,7 @@ class RouteUpdate(UpdateSchemaBase):
     departure_date: date | None = None
     return_date: date | None = None
     is_active: bool | None = None
+    currency: Currency | None = None
 
     @field_validator("departure_date")
     @classmethod
