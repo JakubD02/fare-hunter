@@ -1,6 +1,7 @@
 services:
   app:
     build: .
+    restart: unless-stopped
     ports: ["8000:8000"]
     volumes: [".:/app", "/app/.venv"]
     env_file: [.env]
@@ -13,6 +14,7 @@ services:
     command: sh -c "uv run alembic upgrade head && uv run python -m scripts.init_db && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
   worker:
     build: .
+    restart: unless-stopped
     volumes: [".:/app", "/app/.venv"]
     env_file: [.env]
     environment:
@@ -24,6 +26,7 @@ services:
     command: uv run celery -A app.celery_app worker --loglevel=INFO
   beat:
     build: .
+    restart: unless-stopped
     volumes: [".:/app", "/app/.venv"]
     env_file: [.env]
     environment:
@@ -35,6 +38,7 @@ services:
     command: uv run celery -A app.celery_app beat --loglevel=INFO
   ui:
     build: .
+    restart: unless-stopped
     ports: ["8080:8080"]
     volumes: [".:/app", "/app/.venv"]
     env_file: [.env]
@@ -45,6 +49,7 @@ services:
     command: uv run python ui/main.py
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     ports:
     - "5434:5432"
     environment:
@@ -59,6 +64,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports: ["6379:6379"]
     volumes: [redis_data:/data]
     healthcheck:
