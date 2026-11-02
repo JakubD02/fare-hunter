@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
+from app.enums.sorting import HistorySortField, SortOrder
 from app.models.flight_price import FlightPrice
 from app.models.route import Route
 from app.models.user import User
@@ -26,11 +27,19 @@ class FlightPriceService:
         self._routes = routes
         self._provider = provider
 
-    def get_history(self, user: User, route_id: str, limit: int, offset: int) -> list[FlightPrice] | None:
+    def get_history(
+        self,
+        user: User,
+        route_id: str,
+        limit: int,
+        offset: int,
+        sort_by: HistorySortField = "fetched_at",
+        order: SortOrder = "desc",
+    ) -> list[FlightPrice] | None:
         if self._routes.get_route(user, route_id) is None:
             logger.warning("history rejected: route not found route_id=%s user_id=%s", route_id, user.id)
             return None
-        history = self._prices.list_for_route(route_id, limit=limit, offset=offset)
+        history = self._prices.list_for_route(route_id, limit=limit, offset=offset, sort_by=sort_by, order=order)
         logger.debug("history loaded route_id=%s rows=%d", route_id, len(history))
         return history
 

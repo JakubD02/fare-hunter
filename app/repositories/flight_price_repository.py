@@ -5,6 +5,7 @@ from typing import TypedDict
 from sqlalchemy import func, select
 
 from app.enums.currency import Currency
+from app.enums.sorting import HistorySortField, SortOrder
 from app.models.flight_price import FlightPrice
 from app.repositories.base_repository import BaseRepository
 
@@ -20,11 +21,27 @@ class PriceAggregate(TypedDict):
 class FlightPriceRepository(BaseRepository[FlightPrice]):
     model = FlightPrice
 
-    def list_for_route(self, route_id: str, limit: int, offset: int) -> list[FlightPrice]:
+    SORT_COLUMNS = {
+        "fetched_at": FlightPrice.fetched_at,
+        "price": FlightPrice.price,
+        "departure_date": FlightPrice.departure_date,
+        "return_date": FlightPrice.return_date,
+    }
+
+    def list_for_route(
+        self,
+        route_id: str,
+        limit: int,
+        offset: int,
+        sort_by: HistorySortField = "fetched_at",
+        order: SortOrder = "desc",
+    ) -> list[FlightPrice]:
+        column = self.SORT_COLUMNS[sort_by]
+        direction = column.desc() if order == "desc" else column.asc()
         query = (
             select(FlightPrice)
             .where(FlightPrice.route_id == route_id)
-            .order_by(FlightPrice.fetched_at.desc())
+            .order_by(direction, FlightPrice.id)
             .limit(limit)
             .offset(offset)
         )

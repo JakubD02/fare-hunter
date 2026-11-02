@@ -4,6 +4,7 @@ from starlette import status
 from app.api.auth import CurrentUser
 from app.api.v1.dependencies import FlightPriceServiceDep, PaginationDep
 from app.api.v1.schemas.flight_price import FlightPriceRead, FlightStats
+from app.enums.sorting import HistorySortField, SortOrder
 
 router = APIRouter(prefix="/routes", tags=["statistics"])
 
@@ -18,9 +19,16 @@ def get_stats(route_id: str, service: FlightPriceServiceDep, user: CurrentUser) 
 
 @router.get("/{route_id}/history", response_model=list[FlightPriceRead])
 def get_history(
-    route_id: str, service: FlightPriceServiceDep, user: CurrentUser, page: PaginationDep
+    route_id: str,
+    service: FlightPriceServiceDep,
+    user: CurrentUser,
+    pagination: PaginationDep,
+    sort_by: HistorySortField = "fetched_at",
+    order: SortOrder = "desc",
 ) -> list[FlightPriceRead]:
-    history = service.get_history(user, route_id, limit=page.limit, offset=page.offset)
+    history = service.get_history(
+        user, route_id, limit=pagination.limit, offset=pagination.offset, sort_by=sort_by, order=order
+    )
     if history is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")
     return [FlightPriceRead.model_validate(item) for item in history]

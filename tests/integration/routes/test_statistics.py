@@ -124,3 +124,49 @@ class TestGetHistory:
         history = response.json()
         fetched_times = [record["fetched_at"] for record in history]
         assert fetched_times == sorted(fetched_times, reverse=True)
+
+    def test_get_history_sorted_by_price_asc(self, client, registered_user, price_history):
+        """History can be sorted by price ascending"""
+        response = client.get(
+            f"/routes/{price_history['id']}/history",
+            params={"sort_by": "price", "order": "asc"},
+            headers={"Authorization": f"Bearer {registered_user['token']}"},
+        )
+
+        assert response.status_code == 200
+        prices = [Decimal(record["price"]) for record in response.json()]
+        assert prices == sorted(prices)
+        assert prices[0] == Decimal("100")
+
+    def test_get_history_sorted_by_price_desc(self, client, registered_user, price_history):
+        """History can be sorted by price descending"""
+        response = client.get(
+            f"/routes/{price_history['id']}/history",
+            params={"sort_by": "price", "order": "desc"},
+            headers={"Authorization": f"Bearer {registered_user['token']}"},
+        )
+
+        assert response.status_code == 200
+        prices = [Decimal(record["price"]) for record in response.json()]
+        assert prices == sorted(prices, reverse=True)
+        assert prices[0] == Decimal("140")
+
+    def test_get_history_invalid_sort_field(self, client, registered_user, price_history):
+        """Sorting by a column outside the whitelist is rejected"""
+        response = client.get(
+            f"/routes/{price_history['id']}/history",
+            params={"sort_by": "airline_id"},
+            headers={"Authorization": f"Bearer {registered_user['token']}"},
+        )
+
+        assert response.status_code == 422
+
+    def test_get_history_invalid_order(self, client, registered_user, price_history):
+        """Only asc/desc are accepted as order"""
+        response = client.get(
+            f"/routes/{price_history['id']}/history",
+            params={"order": "up"},
+            headers={"Authorization": f"Bearer {registered_user['token']}"},
+        )
+
+        assert response.status_code == 422
