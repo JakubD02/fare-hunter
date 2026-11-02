@@ -1,5 +1,5 @@
-import json
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import httpx
 from nicegui import app, ui
@@ -18,6 +18,23 @@ FIELD_LABELS = {
 }
 
 PASSWORD_HINT = "At least 8 characters, with upper and lower case letters, a digit and a special character"
+
+LOCAL_TZ = settings.APP_TIMEZONE
+
+HISTORY_PAGE_SIZE = 10
+
+HISTORY_COLUMNS = [
+    {"name": "fetched_at", "label": "Fetched", "field": "fetched_at", "align": "left", "sortable": True},
+    {"name": "airline", "label": "Airline", "field": "airline", "align": "left", "sortable": True},
+    {"name": "price", "label": "Price", "field": "price", "align": "right", "sortable": True},
+    {
+        "name": "departure_date",
+        "label": "Departure",
+        "field": "departure_date",
+        "align": "left",
+    },
+    {"name": "return_date", "label": "Return", "field": "return_date", "align": "left", "sortable": True},
+]
 
 
 def error_text(response: httpx.Response) -> str:
@@ -82,6 +99,29 @@ def parse_date(text: str | None) -> date | None:
         return None
 
 
+def format_date(value: str | None) -> str:
+    parsed = parse_date(value)
+    return parsed.strftime("%d.%m.%Y") if parsed else "-"
+
+
+def format_datetime(value: str | None) -> str:
+    if not value:
+        return "-"
+    try:
+        dt = datetime.fromisoformat(value)
+    except ValueError:
+        return value
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(LOCAL_TZ).strftime("%d.%m.%Y %H:%M")
+
+
+def format_price(value, currency: str) -> str:
+    if value is None:
+        return "-"
+    return f"{float(value):,.2f}".replace(",", " ") + f" {currency}"
+
+
 def fetch_all(path: str, page_size: int = 100) -> list:
     items: list = []
     offset = 0
@@ -120,12 +160,6 @@ def stat_tile(label: str, value: str):
         ui.label(value).classes("text-h6")
 
 
-def format_price(value, currency: str) -> str:
-    if value is None:
-        return "-"
-    return f"{float(value):,.2f}".replace(",", " ") + f" {currency}"
-
-
 def convert_hint(amount, base: str, quote: str = "PLN") -> str:
     if amount is None or base == quote:
         return ""
@@ -155,15 +189,72 @@ def show_stats(stats: dict | None):
     )
 
 
-def show_history(history):
-    if not history:
-        ui.label("No history").classes("text-grey-7")
-        return
-    if isinstance(history, list) and isinstance(history[0], dict):
-        columns = [{"name": k, "label": k, "field": k, "align": "left"} for k in history[0]]
-        ui.table(columns=columns, rows=history).classes("w-full")
-    else:
-        ui.code(json.dumps(history, indent=2, ensure_ascii=False), language="json")
+def history_rows(history: list, airlines: dict[str, str]) -> list[dict]:
+    return [
+        {
+            "id": item.get("id"),
+            "fetched_at": format_datetime(item.get("fetched_at")),
+            "airline": airlines.get(item.get("airline_id"), "Unknown"),
+            "price": format_price(item.get("price"), item.get("currency", "")),
+            "departure_date": format_date(item.get("departure_date")),
+            "return_date": format_date(item.get("return_date")),
+        }
+        for item in history
+    ]
+
+
+def history_table(route_id: str, airlines: dict[str, str]):
+    """Price history table with server-side sorting and paging."""
+    table = ui.table(
+        columns=HISTORY_COLUMNS,
+        rows=[],
+        row_key="id",
+        pagination={
+            "sortBy": "fetched_at",
+            "descending": True,
+            "page": 1,
+            "rowsPerPage": HISTORY_PAGE_SIZE,
+            "rowsNumber": 0,
+        },
+    ).classes("w-full")
+    table.props('binary-state-sort no-data-label="No history" :rows-per-page-options="[]"')
+    table.props(""":pagination-label="(first, end) => first + ' - ' + end" """)
+
+    last_sort = {"sortBy": "fetched_at", "descending": True}
+
+    def load(p: dict) -> None:
+        sort_by = p.get("sortBy") or "fetched_at"
+        descending = bool(p.get("descending"))
+
+        if (sort_by, descending) != (last_sort["sortBy"], last_sort["descending"]):
+            p = {**p, "page": 1}
+            last_sort.update(sortBy=sort_by, descending=descending)
+
+        page_size = p["rowsPerPage"]
+        offset = (p["page"] - 1) * page_size
+        data = (
+            call(
+                "GET",
+                f"/routes/{route_id}/history",
+                params={
+                    "sort_by": sort_by,
+                    "order": "desc" if descending else "asc",
+                    "limit": page_size + 1,
+                    "offset": offset,
+                },
+                notify=False,
+            )
+            or []
+        )
+
+        has_next = len(data) > page_size
+        table.rows = history_rows(data[:page_size], airlines)
+        table.pagination = {**p, "rowsNumber": offset + len(table.rows) + (1 if has_next else 0)}
+        table.update()
+
+    table.on("request", lambda e: load(e.args["pagination"]))
+    load(table.pagination)
+    return table
 
 
 def set_min_day(picker: ui.date, min_day: date):
@@ -305,9 +396,9 @@ def routes_page():
                     destination_code = codes.get(r["destination_id"], "?")
                     ui.label(f"{origin_code} → {destination_code}").classes("text-lg")
 
-                    details = f"Departure: {r['departure_date']}"
+                    details = f"Departure: {format_date(r['departure_date'])}"
                     if r["return_date"]:
-                        details += f"   Return: {r['return_date']}"
+                        details += f"   Return: {format_date(r['return_date'])}"
                     ui.label(details)
 
                     with ui.row():
@@ -401,6 +492,7 @@ def route_page(route_id: str):
     if route is None:
         ui.label("Route not found")
         return
+    airlines = {a["id"]: a["name"] for a in fetch_all("/airlines")}
 
     today = date.today()
     with ui.card().classes("w-full"):
@@ -435,7 +527,7 @@ def route_page(route_id: str):
             ui.label("Statistics").classes("text-lg")
             show_stats(call("GET", f"/routes/{route_id}/stats", notify=False))
             ui.label("History").classes("text-lg q-mt-md")
-            show_history(call("GET", f"/routes/{route_id}/history", notify=False))
+            history_table(route_id, airlines)
 
         with ui.card().classes("w-1/3"):
             ui.label("Price alert").classes("text-lg")
