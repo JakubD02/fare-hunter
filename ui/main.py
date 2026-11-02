@@ -1,4 +1,6 @@
 from datetime import date, datetime, timedelta, timezone
+from typing import Any
+from zoneinfo import ZoneInfo
 
 import httpx
 from nicegui import app, ui
@@ -18,11 +20,11 @@ FIELD_LABELS = {
 
 PASSWORD_HINT = "At least 8 characters, with upper and lower case letters, a digit and a special character"
 
-LOCAL_TZ = settings.APP_TIMEZONE
+LOCAL_TZ = ZoneInfo(settings.APP_TIMEZONE)
 
 HISTORY_PAGE_SIZE = 10
 
-HISTORY_COLUMNS = [
+HISTORY_COLUMNS: list[dict[str, Any]] = [
     {"name": "fetched_at", "label": "Fetched", "field": "fetched_at", "align": "left", "sortable": True},
     {"name": "airline", "label": "Airline", "field": "airline", "align": "left", "sortable": True},
     {"name": "price", "label": "Price", "field": "price", "align": "right", "sortable": True},
@@ -32,7 +34,7 @@ HISTORY_COLUMNS = [
         "field": "departure_date",
         "align": "left",
     },
-    {"name": "return_date", "label": "Return", "field": "return_date", "align": "left", "sortable": True},
+    {"name": "return_date", "label": "Return", "field": "return_date", "align": "left"},
 ]
 
 

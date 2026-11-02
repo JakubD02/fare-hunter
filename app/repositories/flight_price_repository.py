@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 
 from app.enums.currency import Currency
 from app.enums.sorting import HistorySortField, SortOrder
+from app.models.airline import Airline
 from app.models.flight_price import FlightPrice
 from app.repositories.base_repository import BaseRepository
 
@@ -24,8 +25,7 @@ class FlightPriceRepository(BaseRepository[FlightPrice]):
     SORT_COLUMNS = {
         "fetched_at": FlightPrice.fetched_at,
         "price": FlightPrice.price,
-        "departure_date": FlightPrice.departure_date,
-        "return_date": FlightPrice.return_date,
+        "airline": Airline.name,
     }
 
     def list_for_route(
@@ -38,14 +38,13 @@ class FlightPriceRepository(BaseRepository[FlightPrice]):
     ) -> list[FlightPrice]:
         column = self.SORT_COLUMNS[sort_by]
         direction = column.desc() if order == "desc" else column.asc()
-        query = (
-            select(FlightPrice)
-            .where(FlightPrice.route_id == route_id)
-            .order_by(direction, FlightPrice.id)
-            .limit(limit)
-            .offset(offset)
-        )
-        return list(self._db.scalars(query).all())
+
+        query = select(FlightPrice).where(FlightPrice.route_id == route_id)
+        if sort_by == "airline":
+            query = query.join(Airline, FlightPrice.airline_id == Airline.id)
+
+        query = query.order_by(direction.nulls_last(), FlightPrice.id).limit(limit).offset(offset)
+        return list(self._db.scalars(query))
 
     def aggregate_since(self, route_id: str, since: datetime) -> list[PriceAggregate]:
         query = (

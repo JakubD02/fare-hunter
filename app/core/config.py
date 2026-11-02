@@ -122,18 +122,19 @@ class Settings(BaseSettings):
     # app
     APP_ENV: str = "development"
     LOG_LEVEL: str = "DEBUG"
+    APP_TIMEZONE: str = "Europe/Warsaw"
 
     # celery beat schedule
     CELERY_BEAT_SCHEDULE: ClassVar[dict] = {
         "fetch-prices-every-8h": {
             "task": "app.tasks.price_tasks.fetch_all_prices_periodic",
-            "schedule": crontab(minute=0, hour="*/8"),
+            "schedule": crontab(minute=0, hour="0, 8, 16"),
         }
     }
 
     # UI (NiceGUI)
     NICEGUI_STORAGE_SECRET: str
-    API_URL: str
+    API_URL: str = "http://localhost:8000"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
