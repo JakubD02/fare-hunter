@@ -6,7 +6,7 @@ from nicegui import app, ui
 
 from app.core.config import settings
 
-API_URL = "http://localhost:8000"
+API_URL = settings.API_URL
 
 ROUTES_PER_PAGE = 5
 CURRENCIES = ["PLN", "EUR", "USD", "GBP"]

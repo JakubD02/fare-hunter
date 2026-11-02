@@ -10,24 +10,26 @@ from data import AIRLINES_DATA, AIRPORTS_DATA
 logger = logging.getLogger(__name__)
 
 
-def seed_airports(db: Session):
-    if db.execute(select(Airport)).scalars().first():
-        logger.debug("Airports already seeded, skipping")
+def seed_airports(db: Session) -> None:
+    existing = set(db.scalars(select(Airport.iata_code)))
+    new = [Airport(**data) for data in AIRPORTS_DATA if data["iata_code"] not in existing]
+    if not new:
+        logger.debug("Airports up to date, nothing to seed")
         return
-
-    airports = [Airport(**data) for data in AIRPORTS_DATA]
-    db.add_all(airports)
+    db.add_all(new)
     db.commit()
+    logger.info("Seeded %d new airports", len(new))
 
 
-def seed_airlines(db: Session):
-    if db.execute(select(Airline)).scalars().first():
-        logger.debug("Airlines already seeded, skipping")
+def seed_airlines(db: Session) -> None:
+    existing = set(db.scalars(select(Airline.iata_code)))
+    new = [Airline(**data) for data in AIRLINES_DATA if data["iata_code"] not in existing]
+    if not new:
+        logger.debug("Airlines up to date, nothing to seed")
         return
-
-    airlines = [Airline(**data) for data in AIRLINES_DATA]
-    db.add_all(airlines)
+    db.add_all(new)
     db.commit()
+    logger.info("Seeded %d new airlines", len(new))
 
 
 def seed_data() -> None:

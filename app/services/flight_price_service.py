@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.models.flight_price import FlightPrice
+from app.models.route import Route
 from app.models.user import User
 from app.repositories.airline_repository import AirlineRepository
 from app.repositories.flight_price_repository import FlightPriceRepository
@@ -96,7 +97,7 @@ class FlightPriceService:
         saved: list[FlightPrice] = []
         for offer in offers:
             try:
-                price = self._to_price(route_id, offer)
+                price = self._to_price(route, offer)
                 if price is None:
                     continue
                 saved.append(self._prices.add(price))
@@ -108,14 +109,16 @@ class FlightPriceService:
                 )
         return saved
 
-    def _to_price(self, route_id: str, offer: FlightOffer) -> FlightPrice | None:
+    def _to_price(self, route: Route, offer: FlightOffer) -> FlightPrice | None:
         airline_id = self._airlines.find_id(offer["airline"])
         if airline_id is None:
-            logger.warning("unknown airline in offer airline=%s route_id=%s", offer["airline"], route_id)
+            logger.warning("unknown airline in offer airline=%s route_id=%s", offer["airline"], route.id)
             return None
         return FlightPrice(
-            route_id=route_id,
+            route_id=route.id,
             airline_id=airline_id,
-            price=Decimal(offer["price"]),
+            price=Decimal(str(offer["price"])),
             currency=offer["currency"],
+            departure_date=route.departure_date,
+            return_date=route.return_date,
         )

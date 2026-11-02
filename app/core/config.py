@@ -133,6 +133,7 @@ class Settings(BaseSettings):
 
     # UI (NiceGUI)
     NICEGUI_STORAGE_SECRET: str
+    API_URL: str
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

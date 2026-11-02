@@ -21,15 +21,22 @@ class BaseRepository[ModelT: IdModel]:
 
     def add(self, entity: ModelT) -> ModelT:
         self._db.add(entity)
-        self._db.commit()
+        self._commit()
         self._db.refresh(entity)
         return entity
 
     def save(self, entity: ModelT) -> ModelT:
-        self._db.commit()
+        self._commit()
         self._db.refresh(entity)
         return entity
 
     def delete(self, entity: ModelT) -> None:
         self._db.delete(entity)
-        self._db.commit()
+        self._commit()
+
+    def _commit(self) -> None:
+        try:
+            self._db.commit()
+        except Exception:
+            self._db.rollback()
+            raise

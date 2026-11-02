@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 
 from app.api.v1.endpoints.routers import alerts, auth, currency, reference, routes, statistics
+from app.core.logging import configure_logging
+
+configure_logging()
 
 app = FastAPI(
     title="Fare hunter - flight tracker API",

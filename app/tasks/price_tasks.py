@@ -46,15 +46,19 @@ def fetch_prices_for_route(self, route_id: str, user_id: str) -> int:
         )
         db.commit()
 
-    if should_send:
-        send_price_drop_email_task.delay(
-            route_id=str(route.id),
-            user_id=str(route.user_id),
-            price=str(flight_price.price),
-            price_currency=flight_price.currency.value,
-        )
+        best_price = str(flight_price.price)
+        best_currency = flight_price.currency.value
+        owner_id = str(route.user_id)
 
-    logger.info("Saved price %s %s for route %s", flight_price.price, flight_price.currency, route_id)
+        if should_send:
+            send_price_drop_email_task.delay(
+                route_id=str(route.id),
+                user_id=owner_id,
+                price=best_price,
+                price_currency=best_currency,
+            )
+
+    logger.info("Saved price %s %s for route %s", best_price, best_currency, route_id)
     return 1
 
 
