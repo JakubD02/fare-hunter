@@ -1,4 +1,7 @@
+import logging
+
 from fastapi import APIRouter, HTTPException
+from kombu.exceptions import OperationalError
 from starlette import status
 
 from app.api.auth import CurrentUser
@@ -7,6 +10,8 @@ from app.api.v1.schemas.price_alert import PriceAlertRead, PriceAlertUpdate
 from app.tasks.email_tasks import send_alert_confirmation_email_task
 
 router = APIRouter(prefix="/routes", tags=["alerts"])
+
+logger = logging.getLogger(__name__)
 
 
 @router.get("/{route_id}/alert", response_model=PriceAlertRead)
@@ -32,11 +37,14 @@ def upsert_alert(user: CurrentUser, route_id: str, alert_in: PriceAlertUpdate, s
     if not alert:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")
 
-    send_alert_confirmation_email_task.delay(
-        route_id=route_id,
-        user_id=str(user.id),
-        action="updated" if existed else "created",
-    )
+    try:
+        send_alert_confirmation_email_task.delay(
+            route_id=route_id,
+            user_id=str(user.id),
+            action="updated" if existed else "created",
+        )
+    except OperationalError:
+        logger.exception("Failed to queue confirmation email for route %s", route_id)
 
     return alert
 

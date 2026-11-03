@@ -1,7 +1,7 @@
 import logging
-from sqlite3 import OperationalError
 
 from fastapi import APIRouter, HTTPException
+from kombu.exceptions import OperationalError
 from starlette import status
 
 from app.api.auth import CurrentUser
