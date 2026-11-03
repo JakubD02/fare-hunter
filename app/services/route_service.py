@@ -46,6 +46,7 @@ class RouteService:
             departure_date=route_in.departure_date,
             return_date=route_in.return_date,
             is_active=route_in.is_active,
+            currency=route_in.currency,
         )
         route = self._routes.add(route)
         logger.info(

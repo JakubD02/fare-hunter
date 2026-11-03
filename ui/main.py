@@ -123,6 +123,14 @@ def format_price(value, currency: str) -> str:
     return f"{float(value):,.2f}".replace(",", " ") + f" {currency}"
 
 
+def airport_label(airport: dict | None) -> str:
+    if airport is None:
+        return "Unknown airport"
+    name = airport.get("name")
+    base = f"{airport['city']} ({airport['iata_code']})"
+    return f"{base} · {name}" if name else base
+
+
 def fetch_all(path: str, page_size: int = 100) -> list:
     items: list = []
     offset = 0
@@ -155,10 +163,41 @@ def frame(title: str):
     ui.label(title).classes("text-2xl q-my-md")
 
 
-def stat_tile(label: str, value: str):
+def confirm_delete(message: str, on_confirm) -> None:
+    """Show a confirmation dialog and run on_confirm only if the user agrees."""
+    with ui.dialog() as dialog, ui.card().classes("min-w-[320px]"):
+        ui.label("Are you sure?").classes("text-lg")
+        ui.label(message).classes("text-grey-8")
+        with ui.row().classes("w-full justify-end q-mt-md"):
+            ui.button("Cancel", on_click=dialog.close).props("flat")
+
+            def confirmed():
+                dialog.close()
+                on_confirm()
+
+            ui.button("Delete", color="negative", on_click=confirmed)
+    dialog.open()
+
+
+def stat_tile(label: str, value: str, original: str | None = None):
     with ui.card().classes("items-center min-w-[120px]"):
         ui.label(label).classes("text-caption text-grey-7")
         ui.label(value).classes("text-h6")
+        if original:
+            ui.label(original).classes("text-caption text-grey-6")
+
+
+def get_rate(base: str, quote: str) -> float | None:
+    """Exchange rate base -> quote, or None if the API is unavailable."""
+    if base == quote:
+        return 1.0
+    data = call(
+        "GET",
+        "/currency/convert",
+        params={"amount": 1, "base": base, "quote": quote},
+        notify=False,
+    )
+    return float(data["result"]) if data else None
 
 
 def convert_hint(amount, base: str, quote: str = "PLN") -> str:
@@ -175,19 +214,36 @@ def convert_hint(amount, base: str, quote: str = "PLN") -> str:
     return f"≈ {data['result']:,.2f} {quote}"
 
 
-def show_stats(stats: dict | None):
+def show_stats(stats: dict | None, target_currency: str):
     if not stats or not stats.get("sample_count"):
         ui.label("No data yet, wait for the first price fetch").classes("text-grey-7")
         return
 
-    currency = stats.get("currency") or ""
+    source_currency = stats.get("currency") or target_currency
+    rate = get_rate(source_currency, target_currency)
+    converted = rate is not None and source_currency != target_currency
+
+    def tile(label: str, value) -> None:
+        if converted:
+            stat_tile(
+                label,
+                "≈ " + format_price(float(value) * rate, target_currency),
+                format_price(value, source_currency),
+            )
+        else:
+            stat_tile(label, format_price(value, source_currency))
+
     with ui.row().classes("w-full gap-4"):
-        stat_tile("Lowest", format_price(stats["min_price"], currency))
-        stat_tile("Average", format_price(stats["avg_price"], currency))
-        stat_tile("Highest", format_price(stats["max_price"], currency))
+        tile("Lowest", stats["min_price"])
+        tile("Average", stats["avg_price"])
+        tile("Highest", stats["max_price"])
     ui.label(f"Samples: {stats['sample_count']} from the last {stats['period_days']} days").classes(
         "text-caption text-grey-7"
     )
+    if converted:
+        ui.label(f"Prices converted from {source_currency} to {target_currency} at the current exchange rate").classes(
+            "text-caption text-grey-7"
+        )
 
 
 def history_rows(history: list, airlines: dict[str, str]) -> list[dict]:
@@ -364,13 +420,27 @@ def routes_page():
     codes = {a["id"]: a["iata_code"] for a in airports}
     options = {a["id"]: f"{a['iata_code']} – {a['city']}" for a in airports}
 
+    max_routes = settings.route.max_routes_per_user
+
     page = {"index": 0}
     routes_box = ui.column().classes("w-full")
+
+    def update_add_section():
+        total = len(fetch_all("/routes/"))
+        limit_reached = total >= max_routes
+        add_section.set_visibility(not limit_reached)
+        limit_label.set_visibility(limit_reached)
 
     def remove(route_id: str):
         if call("DELETE", f"/routes/{route_id}") is not None:
             ui.notify("Route deleted", type="positive")
             refresh()
+
+    def ask_remove(route_id: str, label: str):
+        confirm_delete(
+            f"Route {label} and its price history will be deleted permanently.",
+            lambda: remove(route_id),
+        )
 
     def change_page(delta: int):
         page["index"] = max(0, page["index"] + delta)
@@ -404,7 +474,12 @@ def routes_page():
 
                     with ui.row():
                         ui.button("Details", on_click=lambda rid=r["id"]: ui.navigate.to(f"/routes/{rid}"))
-                        ui.button("Delete", color="negative", on_click=lambda rid=r["id"]: remove(rid))
+                        label = f"{origin_code} → {destination_code}"
+                        ui.button(
+                            "Delete",
+                            color="negative",
+                            on_click=lambda rid=r["id"], lbl=label: ask_remove(rid, lbl),
+                        )
 
             pager = ui.row().classes("w-full items-center justify-between")
             pager.set_visibility(page["index"] > 0 or has_next)
@@ -415,7 +490,14 @@ def routes_page():
                 next_button = ui.button("Next →", on_click=lambda: change_page(1)).props("flat")
                 next_button.set_enabled(has_next)
 
-    with ui.expansion("Add new route", icon="add").classes("w-full"):
+        update_add_section()
+
+    limit_label = ui.label(
+        f"You have reached the limit of {max_routes} routes. Delete one to add a new route."
+    ).classes("text-grey-7")
+    limit_label.set_visibility(False)
+
+    with ui.expansion("Add new route", icon="add").classes("w-full") as add_section:
         origin = ui.select(options, label="From", with_input=True).classes("w-full")
         destination = ui.select(options, label="To", with_input=True).classes("w-full")
         currency = ui.select(CURRENCIES, value="PLN", label="Currency").classes("w-full")
@@ -486,7 +568,7 @@ def routes_page():
 def route_page(route_id: str):
     if not require_login():
         return
-    frame("Route details")
+    frame("Route")
     ui.button("← Back", on_click=lambda: ui.navigate.to("/")).props("flat")
 
     route = call("GET", f"/routes/{route_id}", notify=False)
@@ -494,6 +576,20 @@ def route_page(route_id: str):
         ui.label("Route not found")
         return
     airlines = {a["id"]: a["name"] for a in fetch_all("/airlines")}
+    airports = {a["id"]: a for a in fetch_all("/airports")}
+
+    origin = airports.get(route["origin_id"])
+    destination = airports.get(route["destination_id"])
+
+    with ui.card().classes("w-full"):
+        with ui.row().classes("items-center gap-3"):
+            ui.icon("flight_takeoff").classes("text-2xl text-primary")
+            ui.label(airport_label(origin)).classes("text-lg")
+            ui.icon("arrow_forward").classes("text-grey-6")
+            ui.icon("flight_land").classes("text-2xl text-primary")
+            ui.label(airport_label(destination)).classes("text-lg")
+        trip_type = "Round trip" if route["return_date"] else "One way"
+        ui.label(trip_type).classes("text-caption text-grey-7")
 
     today = date.today()
     with ui.card().classes("w-full"):
@@ -518,6 +614,7 @@ def route_page(route_id: str):
             }
             if call("PATCH", f"/routes/{route_id}", json=body) is not None:
                 ui.notify("Route updated", type="positive")
+                ui.navigate.to("/")
 
         ui.button("Save changes", on_click=save_route)
 
@@ -526,13 +623,15 @@ def route_page(route_id: str):
     with ui.row().classes("w-full items-start"):
         with ui.card().classes("w-2/3"):
             ui.label("Statistics").classes("text-lg")
-            show_stats(call("GET", f"/routes/{route_id}/stats", notify=False))
+            show_stats(call("GET", f"/routes/{route_id}/stats", notify=False), route["currency"])
             ui.label("History").classes("text-lg q-mt-md")
             history_table(route_id, airlines)
 
         with ui.card().classes("w-1/3"):
             ui.label("Price alert").classes("text-lg")
+            active = ui.switch("Active", value=True)
             threshold = ui.number(f"Threshold ({route['currency']})", min=1).classes("w-full")
+            threshold.bind_enabled_from(active, "value")
             hint = ui.label("").classes("text-caption text-grey-7")
             threshold.on_value_change(lambda e: hint.set_text(convert_hint(e.value, currency.value)))
             currency.on_value_change(
@@ -541,25 +640,30 @@ def route_page(route_id: str):
                     hint.set_text(convert_hint(threshold.value, e.value)),
                 )
             )
-            active = ui.switch("Active", value=True)
 
             def save_alert():
-                if threshold.value is None:
+                if active.value and threshold.value is None:
                     ui.notify("Enter a price threshold", type="warning")
+                    return
+                if threshold.value is None:
+                    ui.notify("Set a threshold before saving the alert", type="warning")
                     return
                 body = {"threshold_price": threshold.value, "is_active": active.value}
                 if call("PUT", f"/routes/{route_id}/alert", json=body) is not None:
                     alert_state["exists"] = True
                     ui.notify("Alert saved", type="positive")
 
-            def delete_alert():
-                if not alert_state["exists"]:
-                    ui.notify("This route has no alert yet", type="warning")
-                    return
+            def do_delete_alert():
                 if call("DELETE", f"/routes/{route_id}/alert") is not None:
                     alert_state["exists"] = False
                     threshold.value = None
                     ui.notify("Alert deleted", type="positive")
+
+            def delete_alert():
+                if not alert_state["exists"]:
+                    ui.notify("This route has no alert yet", type="warning")
+                    return
+                confirm_delete("The price alert for this route will be deleted.", do_delete_alert)
 
             with ui.row():
                 ui.button("Save", on_click=save_alert)

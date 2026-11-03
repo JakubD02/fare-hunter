@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 from app.core.config import settings
+from app.enums.currency import Currency
 from app.services.serpapi_provider import SerpApiFlightProvider
 
 
@@ -14,6 +15,7 @@ def main() -> None:
         origin_code="WAW",
         destination_code="LHR",
         departure_date=date.today() + timedelta(days=30),
+        currency=Currency.EUR,
     )
 
     print(f"Number of offers: {len(offers)}")
