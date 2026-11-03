@@ -8,10 +8,9 @@ from app.services.flight_price_provider import FlightOffer
 
 
 class SerpApiFlightProvider:
-    def __init__(self, api_key: str, base_url: str, client: httpx.Client | None = None) -> None:
+    def __init__(self, api_key: str, base_url: str) -> None:
         self._api_key = api_key
         self._base_url = base_url.rstrip("/")
-        self._client = client or httpx.Client(timeout=10.0)
 
     def fetch_offers(
         self,
@@ -30,12 +29,11 @@ class SerpApiFlightProvider:
             "type": "1" if return_date else "2",
             "api_key": self._api_key,
         }
-        if return_date:
-            params["return_date"] = return_date.isoformat()
 
-        response = self._client.get(f"{self._base_url}/search.json", params=params)
-        response.raise_for_status()
-        data = response.json()
+        with httpx.Client(timeout=10.0) as client:
+            response = client.get(f"{self._base_url}/search.json", params=params)
+            response.raise_for_status()
+            data = response.json()
 
         offers: list[FlightOffer] = []
         for item in data.get("best_flights", []) + data.get("other_flights", []):
