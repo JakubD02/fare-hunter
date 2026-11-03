@@ -70,11 +70,14 @@ def send_alert_confirmation_email_task(self, route_id: str, user_id: str, action
 
 @celery_app.task(bind=True, **EMAIL_RETRY_OPTIONS)
 def send_price_drop_email_task(self, route_id: str, user_id: str, price: str, price_currency: str) -> int:
+
     with SessionLocal() as db:
         context = _load_alert_context(db, user_id, route_id)
         if context is None:
             return 0
         user, alert, route = context
+        if not alert.is_active:
+            return 0
 
         now = datetime.now(timezone.utc)
         if not should_notify(alert, Decimal(price), Currency(price_currency), route.currency, now):

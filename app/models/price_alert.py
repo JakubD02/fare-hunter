@@ -2,6 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import (
+    DateTime,
     ForeignKey,
     Numeric,
 )
@@ -19,4 +20,4 @@ class PriceAlert(BaseModel):
         Numeric(settings.price.price_max_digits, settings.price.price_decimal_places), nullable=False
     )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
-    last_notified_at: Mapped[datetime | None] = mapped_column()
+    last_notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
