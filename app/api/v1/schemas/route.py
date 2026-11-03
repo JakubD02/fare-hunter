@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
 
@@ -48,6 +49,8 @@ class RouteCreate(RouteFields):
 
 
 class RouteUpdate(UpdateSchemaBase):
+    nullable_fields: ClassVar[frozenset[str]] = frozenset({"return_date"})
+
     origin_id: str | None = None
     destination_id: str | None = None
     departure_date: date | None = None

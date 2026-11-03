@@ -85,7 +85,7 @@ class TestRouteUpdate:
         with pytest.raises(ValidationError, match="must be in the future"):
             RouteUpdate(departure_date=TODAY - timedelta(days=1))
 
-    @pytest.mark.parametrize("field", ["origin_id", "destination_id", "departure_date", "return_date", "is_active"])
+    @pytest.mark.parametrize("field", ["origin_id", "destination_id", "departure_date", "is_active"])
     def test_explicit_null_is_rejected(self, field):
         """UpdateSchemaBase forbids null, so a field cannot be cleared to None"""
         with pytest.raises(ValidationError, match="cannot be null"):
