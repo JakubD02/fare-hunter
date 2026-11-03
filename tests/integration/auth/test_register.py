@@ -75,3 +75,15 @@ def test_register_with_additional_field(client):
     )
 
     assert response.status_code == 201
+
+
+def test_register_duplicate_email_case_insensitive(client):
+    """Email uniqueness ignores letter case"""
+    payload = {"email": "User@test.com", "password": "Test1234!", "first_name": "test"}
+    assert client.post("/auth/register", json=payload).status_code == 201
+
+    payload["email"] = "user@test.com"
+    response = client.post("/auth/register", json=payload)
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Email already registered"
