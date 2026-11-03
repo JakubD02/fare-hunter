@@ -128,7 +128,7 @@ class Settings(BaseSettings):
     CELERY_BEAT_SCHEDULE: ClassVar[dict] = {
         "fetch-prices-every-8h": {
             "task": "app.tasks.price_tasks.fetch_all_prices_periodic",
-            "schedule": crontab(minute=0, hour="0, 8, 16"),
+            "schedule": crontab(minute=34, hour="18"),
         }
     }
 

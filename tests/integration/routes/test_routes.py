@@ -112,6 +112,22 @@ class TestCreateRoute:
 
         assert response.status_code == 401
 
+    def test_create_route_duplicate_pair(self, client, registered_user, route_data):
+        """Cannot create the same origin-destination pair twice"""
+        headers = {"Authorization": f"Bearer {registered_user['token']}"}
+
+        first = client.post("/routes/", json=route_data, headers=headers)
+        assert first.status_code == 201
+
+        second = client.post("/routes/", json=route_data, headers=headers)
+        assert second.status_code == 422
+
+        routes = client.get("/routes/", headers=headers).json()
+        assert len(routes) == 1
+
+    def test_create_route_exceeds_user_limit(self, client, registered_user, route_data, monkeypatch):
+        pass
+
 
 class TestGetRoute:
     """Test GET /routes/{route_id}"""
