@@ -7,6 +7,7 @@ from app.models.price_alert import PriceAlert
 from app.models.route import Route
 from app.models.user import User
 from app.repositories.alert_repository import AlertRepository
+from app.services import currency as currency_service
 from app.services.alert_rules import should_notify
 from app.services.route_service import RouteService
 
@@ -88,4 +89,5 @@ class AlertService:
         alert = self._alerts.get_active_by_route_id(route.id)
         if alert is None:
             return False
-        return should_notify(alert, flight_price.price, flight_price.currency, route.currency, now)
+        rate = currency_service.get_conversion_rate(flight_price.currency, route.currency)
+        return should_notify(alert, flight_price.price, rate, now)

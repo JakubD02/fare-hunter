@@ -34,3 +34,9 @@ def convert(amount: Decimal, base: Currency, quote: Currency) -> Decimal:
     if base == quote:
         return amount
     return (amount * get_rate(base, quote)).quantize(Decimal("0.01"))
+
+
+def get_conversion_rate(base: Currency, quote: Currency) -> Decimal:
+    if base == quote:
+        return Decimal(1)
+    return get_rate(base, quote)

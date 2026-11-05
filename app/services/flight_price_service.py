@@ -2,6 +2,8 @@ import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
+from app.core.config import settings
+from app.enums.currency import Currency
 from app.enums.sorting import HistorySortField, SortOrder
 from app.models.flight_price import FlightPrice
 from app.models.route import Route
@@ -97,7 +99,7 @@ class FlightPriceService:
             destination_code=route.destination_airport.iata_code,
             departure_date=route.departure_date,
             return_date=route.return_date,
-            currency=route.currency,
+            currency=Currency(settings.price.base_currency),
         )
         if not offers:
             logger.warning("refresh got no offers route_id=%s", route_id)

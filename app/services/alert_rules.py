@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
-from app.enums.currency import Currency
 from app.models.price_alert import PriceAlert
 
 NOTIFICATION_COOLDOWN = timedelta(hours=24)
@@ -15,11 +14,11 @@ def _as_utc(value: datetime) -> datetime:
 def should_notify(
     alert: PriceAlert,
     price: Decimal,
-    price_currency: Currency,
-    route_currency: Currency,
+    rate: Decimal,
     now: datetime,
 ) -> bool:
-    if price_currency != route_currency:
+    converted_price = price * rate
+    if converted_price >= alert.threshold_price:
         return False
     if price >= alert.threshold_price:
         return False

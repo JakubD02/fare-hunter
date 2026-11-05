@@ -4,6 +4,8 @@ from celery.schedules import crontab
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.enums.currency import Currency
+
 
 class AirlineConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -61,6 +63,7 @@ class PriceConfig(BaseModel):
 
     price_max_digits: int = 10
     price_decimal_places: int = 2
+    base_currency: Currency = Currency.PLN
 
     price_min_value: int = 1
 
