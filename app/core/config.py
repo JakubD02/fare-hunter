@@ -1,7 +1,7 @@
 from typing import ClassVar
 
 from celery.schedules import crontab
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -96,7 +96,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # jwt
-    JWT_SECRET_KEY: str
+    JWT_SECRET_KEY: SecretStr
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -111,11 +111,11 @@ class Settings(BaseSettings):
     pagination: PaginationConfig = PaginationConfig()
 
     # serpapi
-    SERPAPI_KEY: str
+    SERPAPI_KEY: SecretStr
     SERPAPI_URL: str = "https://serpapi.com"
 
     # sendgrid
-    SENDGRID_API_KEY: str
+    SENDGRID_API_KEY: SecretStr
     FROM_EMAIL: EmailStr = Field(default="noreply@farehunter.app", validate_default=True)
     APP_URL: str = "http://localhost:8000"
 
@@ -133,7 +133,7 @@ class Settings(BaseSettings):
     }
 
     # UI (NiceGUI)
-    NICEGUI_STORAGE_SECRET: str
+    NICEGUI_STORAGE_SECRET: SecretStr
     API_URL: str = "http://localhost:8000"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

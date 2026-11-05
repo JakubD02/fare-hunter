@@ -15,7 +15,7 @@ AlertAction = Literal["created", "updated"]
 
 class EmailService:
     def __init__(self, api_key: str | None = None, from_email: str | None = None) -> None:
-        self._api_key = api_key or settings.SENDGRID_API_KEY
+        self._api_key = api_key or settings.SENDGRID_API_KEY.get_secret_value()
         self._from_email = from_email or settings.FROM_EMAIL
 
     def send(self, to_email: str, subject: str, body: str) -> None:

@@ -38,7 +38,8 @@ def build_flight_price_service(db: Session, provider: FlightPriceProvider | None
         prices=FlightPriceRepository(db),
         airlines=AirlineRepository(db),
         routes=build_route_service(db),
-        provider=provider or SerpApiFlightProvider(api_key=settings.SERPAPI_KEY, base_url=settings.SERPAPI_URL),
+        provider=provider
+        or SerpApiFlightProvider(api_key=settings.SERPAPI_KEY.get_secret_value(), base_url=settings.SERPAPI_URL),
     )
 
 

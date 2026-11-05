@@ -682,5 +682,5 @@ if __name__ in {"__main__", "__mp_main__"}:
         port=8080,
         host="0.0.0.0",
         show=False,
-        storage_secret=settings.NICEGUI_STORAGE_SECRET,
+        storage_secret=settings.NICEGUI_STORAGE_SECRET.get_secret_value(),
     )

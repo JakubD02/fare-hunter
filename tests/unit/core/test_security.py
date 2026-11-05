@@ -18,7 +18,7 @@ pytestmark = pytest.mark.unit
 
 def _decode(token: str) -> dict:
     """Decode a token without any extra checks, to inspect its claims"""
-    return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    return jwt.decode(token, settings.JWT_SECRET_KEY.get_secret_value(), algorithms=[settings.JWT_ALGORITHM])
 
 
 def test_password_hash_is_not_plaintext_and_verifies():
@@ -56,7 +56,7 @@ def test_decode_refresh_rejects_expired_token():
         "type": "refresh",
         "exp": datetime.now(timezone.utc) - timedelta(minutes=1),
     }
-    token = jwt.encode(expired_payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    token = jwt.encode(expired_payload, settings.JWT_SECRET_KEY.get_secret_value(), algorithm=settings.JWT_ALGORITHM)
 
     with pytest.raises(jwt.ExpiredSignatureError):
         decode_refresh_token(token)
