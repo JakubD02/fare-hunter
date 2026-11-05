@@ -211,7 +211,7 @@ def convert_hint(amount, base: str, quote: str = "PLN") -> str:
     )
     if not data:
         return ""
-    return f"≈ {data['result']:,.2f} {quote}"
+    return "≈ " + format_price(data["result"], quote)
 
 
 def show_stats(stats: dict | None, target_currency: str):
@@ -246,13 +246,28 @@ def show_stats(stats: dict | None, target_currency: str):
         )
 
 
-def history_rows(history: list, airlines: dict[str, str]) -> list[dict]:
+def history_rows(history: list, airlines: dict[str, str], target_currency: str) -> list[dict]:
+    # One rate lookup per source currency per page, not per row
+    rates: dict[str, float | None] = {}
+
+    def price_cell(item: dict) -> str:
+        source = item.get("currency", "")
+        value = item.get("price")
+        if value is None or source == target_currency:
+            return format_price(value, source)
+        if source not in rates:
+            rates[source] = get_rate(source, target_currency)
+        rate = rates[source]
+        if rate is None:
+            return format_price(value, source)
+        return "≈ " + format_price(float(value) * rate, target_currency)
+
     return [
         {
             "id": item.get("id"),
             "fetched_at": format_datetime(item.get("fetched_at")),
             "airline": airlines.get(item.get("airline_id"), "Unknown"),
-            "price": format_price(item.get("price"), item.get("currency", "")),
+            "price": price_cell(item),
             "departure_date": format_date(item.get("departure_date")),
             "return_date": format_date(item.get("return_date")),
         }
@@ -260,7 +275,7 @@ def history_rows(history: list, airlines: dict[str, str]) -> list[dict]:
     ]
 
 
-def history_table(route_id: str, airlines: dict[str, str]):
+def history_table(route_id: str, airlines: dict[str, str], target_currency: str):
     """Price history table with server-side sorting and paging."""
     table = ui.table(
         columns=HISTORY_COLUMNS,
@@ -305,7 +320,7 @@ def history_table(route_id: str, airlines: dict[str, str]):
         )
 
         has_next = len(data) > page_size
-        table.rows = history_rows(data[:page_size], airlines)
+        table.rows = history_rows(data[:page_size], airlines, target_currency)
         table.pagination = {**p, "rowsNumber": offset + len(table.rows) + (1 if has_next else 0)}
         table.update()
 
@@ -500,7 +515,7 @@ def routes_page():
     with ui.expansion("Add new route", icon="add").classes("w-full") as add_section:
         origin = ui.select(options, label="From", with_input=True).classes("w-full")
         destination = ui.select(options, label="To", with_input=True).classes("w-full")
-        currency = ui.select(CURRENCIES, value="PLN", label="Currency").classes("w-full")
+        currency = ui.select(CURRENCIES, value="PLN", label="Display currency").classes("w-full")
         departure, _ = date_input("Departure", first_departure)
         returning, return_picker = date_input("Return (optional)", first_departure + timedelta(days=1))
         returning.disable()
@@ -591,12 +606,14 @@ def route_page(route_id: str):
         trip_type = "Round trip" if route["return_date"] else "One way"
         ui.label(trip_type).classes("text-caption text-grey-7")
 
+    alert_state = {"exists": False}
+
     today = date.today()
     with ui.card().classes("w-full"):
         ui.label("Dates and currency").classes("text-lg")
         departure, _ = date_input("Departure", today + timedelta(days=1), route["departure_date"])
         returning, _ = date_input("Return (optional)", today + timedelta(days=2), route["return_date"] or "")
-        currency = ui.select(CURRENCIES, value=route["currency"], label="Currency").classes("w-full")
+        currency = ui.select(CURRENCIES, value=route["currency"], label="Display currency").classes("w-full")
 
         def save_route():
             dep = parse_date(departure.value)
@@ -618,14 +635,12 @@ def route_page(route_id: str):
 
         ui.button("Save changes", on_click=save_route)
 
-    alert_state = {"exists": False}
-
     with ui.row().classes("w-full items-start"):
         with ui.card().classes("w-2/3"):
             ui.label("Statistics").classes("text-lg")
             show_stats(call("GET", f"/routes/{route_id}/stats", notify=False), route["currency"])
             ui.label("History").classes("text-lg q-mt-md")
-            history_table(route_id, airlines)
+            history_table(route_id, airlines, route["currency"])
 
         with ui.card().classes("w-1/3"):
             ui.label("Price alert").classes("text-lg")
@@ -634,12 +649,17 @@ def route_page(route_id: str):
             threshold.bind_enabled_from(active, "value")
             hint = ui.label("").classes("text-caption text-grey-7")
             threshold.on_value_change(lambda e: hint.set_text(convert_hint(e.value, currency.value)))
-            currency.on_value_change(
-                lambda e: (
-                    threshold.props(f'label="Threshold ({e.value})"'),
-                    hint.set_text(convert_hint(threshold.value, e.value)),
-                )
-            )
+
+            def on_currency_change(e):
+                threshold.props(f'label="Threshold ({e.value})"')
+                hint.set_text(convert_hint(threshold.value, e.value))
+                if alert_state["exists"] and e.value != route["currency"]:
+                    ui.notify(
+                        f"After saving, your alert threshold will be interpreted in {e.value}",
+                        type="warning",
+                    )
+
+            currency.on_value_change(on_currency_change)
 
             def save_alert():
                 if active.value and threshold.value is None:
