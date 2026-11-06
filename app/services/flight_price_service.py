@@ -51,17 +51,19 @@ class FlightPriceService:
     def get_stats(
         self, user: User, route_id: str, days: int = 30, preferred_currency: str | None = None
     ) -> dict | None:
-
         route = self._routes.get_route(user, route_id)
         if route is None:
             logger.warning("stats rejected: route not found route_id=%s user_id=%s", route_id, user.id)
             return None
 
+        if preferred_currency is None:
+            preferred_currency = route.currency
+
         since = datetime.now(timezone.utc) - timedelta(days=days)
-        by_currency = self._prices.aggregate_since(route_id, since, round_trip=route.return_date is not None)
+        by_currency = self._prices.aggregate_since(route.id, since, round_trip=route.return_date is not None)
         logger.debug(
             "stats computed route_id=%s days=%d currencies=%d",
-            route_id,
+            route.id,
             days,
             len(by_currency),
         )
@@ -72,7 +74,7 @@ class FlightPriceService:
         primary = by_currency[0] if by_currency else None
 
         return {
-            "route_id": route_id,
+            "route_id": route.id,
             "period_days": days,
             "currency": primary["currency"] if primary else None,
             "sample_count": primary["sample_count"] if primary else 0,
