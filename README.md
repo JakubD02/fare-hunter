@@ -21,6 +21,7 @@ A FastAPI flight price tracker with price alerts and email notifications. Track 
 - ✅ **Email notifications**: SendGrid for alert confirmations and price-drop emails
 - ✅ **Celery Beat**: scheduled price fetch every 8 hours, with retries on SerpAPI rate limits and 5xx errors
 - ✅ **Docker Compose**: API, worker, beat, frontend, PostgreSQL and Redis, started in the right order via healthchecks
+- ☁️ **Azure (planned)**: the app will be hosted on Microsoft Azure
 
 ---
 
@@ -139,8 +140,8 @@ fare-hunter/
 
 ### Prerequisites
 
-- Docker & Docker Compose, or
-- Python 3.12+, [uv](https://docs.astral.sh/uv/), PostgreSQL and Redis for local development
+- **Docker Desktop** (recommended): install it and make sure it is **running** before you start the app. It includes Docker Compose. Check with `docker --version`.
+- Or, to develop without Docker: Python 3.12+, [uv](https://docs.astral.sh/uv/), PostgreSQL and Redis.
 
 ### 1. Clone and configure
 
@@ -331,13 +332,27 @@ Features:
 - Add a route with date pickers: departure from tomorrow on, return at least one day after departure, origin and destination must differ, and the form resets after a successful add
 - Route details with min / average / max prices, price history and a price alert (set, update, deactivate, delete)
 
-Run it locally (the API must be running):
+### With Docker (recommended)
+
+Docker Desktop must be running. From the project folder:
+
+```bash
+docker compose up --build
+```
+
+Then open **http://localhost:8080**. The `ui` service starts together with the API, so you don't need to run anything else. Inside the Docker network it reaches the API at `http://app:8000`.
+
+### Without Docker
+
+The API must be running first (see [2b. Run locally](#2b-run-locally)). Then, in another terminal:
 
 ```bash
 API_URL=http://localhost:8000 uv run python ui/main.py
 ```
 
-Then open http://localhost:8080. With Docker Compose, the `ui` service is started on port 8080 and reaches the API at `http://app:8000` inside the network.
+Then open **http://localhost:8080**.
+
+> If port 8080 or 8000 is already in use, stop the other program first.
 
 ---
 
@@ -468,9 +483,9 @@ uv run alembic downgrade -1
 - [x] SerpAPI flight price provider
 - [x] CI with tests, type checking and security scanning
 - [x] NiceGUI frontend for routes, stats and alerts
+- [ ] Deployment to Microsoft Azure (planned)
 - [ ] Advanced analytics (price trends, best time to buy)
 - [ ] Multiple alert types (availability, schedule changes)
-- [ ] Deployment
 
 ---
 
