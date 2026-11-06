@@ -1,15 +1,22 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
 
 from app.api.v1.schemas.base import UpdateSchemaBase
+from app.core.config import settings
 from app.enums.currency import Currency
+
+
+def _max_allowed_date() -> date:
+    return date.today() + timedelta(days=settings.route.max_days_ahead)
 
 
 def validate_departure_date(val: date) -> date:
     if val <= date.today():
         raise ValueError("Departure_date must be in the future")
+    if val > _max_allowed_date():
+        raise ValueError(f"Departure_date must be within {settings.route.max_days_ahead} days from today")
     return val
 
 

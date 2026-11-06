@@ -46,6 +46,7 @@ class RouteConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     max_routes_per_user: int = 3
+    max_days_ahead: int = 329
 
 
 class MockConfig(BaseModel):

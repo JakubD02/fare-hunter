@@ -100,6 +100,11 @@ def parse_date(text: str | None) -> date | None:
         return None
 
 
+def max_day() -> date:
+    """Latest departure or return date the API accepts."""
+    return date.today() + timedelta(days=settings.route.max_days_ahead)
+
+
 def format_date(value: str | None) -> str:
     parsed = parse_date(value)
     return parsed.strftime("%d.%m.%Y") if parsed else "-"
@@ -329,8 +334,8 @@ def history_table(route_id: str, airlines: dict[str, str], target_currency: str)
     return table
 
 
-def set_min_day(picker: ui.date, min_day: date):
-    picker.props(f":options=\"(d) => d >= '{min_day:%Y/%m/%d}'\"")
+def set_day_range(picker: ui.date, min_day: date, max_day_value: date):
+    picker.props(f":options=\"(d) => d >= '{min_day:%Y/%m/%d}' && d <= '{max_day_value:%Y/%m/%d}'\"")
 
 
 def date_input(label: str, min_day: date, value: str = ""):
@@ -339,7 +344,7 @@ def date_input(label: str, min_day: date, value: str = ""):
             with ui.date().bind_value(field) as picker:
                 with ui.row().classes("justify-end"):
                     ui.button("OK", on_click=menu.close).props("flat")
-        set_min_day(picker, min_day)
+        set_day_range(picker, min_day, max_day())
         field.on("click", menu.open)
         with field.add_slot("append"):
             ui.icon("close").on("click", lambda: field.set_value("")).classes("cursor-pointer q-mr-xs")
@@ -529,7 +534,7 @@ def routes_page():
 
             returning.enable()
             min_return = dep + timedelta(days=1)
-            set_min_day(return_picker, min_return)
+            set_day_range(return_picker, min_return, max_day())
             ret = parse_date(returning.value)
             if ret is not None and ret < min_return:
                 returning.set_value("")
@@ -555,10 +560,16 @@ def routes_page():
             if dep is None or dep <= today:
                 ui.notify("Select a departure date from tomorrow onwards", type="warning")
                 return
+            if dep > max_day():
+                ui.notify(f"Departure must be within {settings.route.max_days_ahead} days", type="warning")
+                return
 
             ret = parse_date(returning.value)
             if returning.value and (ret is None or ret <= dep):
                 ui.notify("Return must be at least one day after departure", type="warning")
+                return
+            if ret is not None and ret > max_day():
+                ui.notify(f"Return must be within {settings.route.max_days_ahead} days", type="warning")
                 return
 
             body = {
@@ -620,9 +631,15 @@ def route_page(route_id: str):
             if dep is None or dep <= today:
                 ui.notify("Select a departure date from tomorrow onwards", type="warning")
                 return
+            if dep > max_day():
+                ui.notify(f"Departure must be within {settings.route.max_days_ahead} days", type="warning")
+                return
             ret = parse_date(returning.value)
             if returning.value and (ret is None or ret <= dep):
                 ui.notify("Return must be at least one day after departure", type="warning")
+                return
+            if ret is not None and ret > max_day():
+                ui.notify(f"Return must be within {settings.route.max_days_ahead} days", type="warning")
                 return
             body = {
                 "departure_date": departure.value,
