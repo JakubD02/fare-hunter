@@ -49,8 +49,16 @@ def get_route(service: RouteServiceDep, current_user: CurrentUser, route_id: str
     return route
 
 
+def trip_signature(route) -> tuple:
+    """Fields that decide which flight prices we fetch."""
+    return (route.origin_id, route.destination_id, route.departure_date, route.return_date, route.currency)
+
+
 @router.patch("/{route_id}", response_model=RouteRead)
 def update_route(service: RouteServiceDep, current_user: CurrentUser, route_id: str, route_in: RouteUpdate):
+    before = service.get_route(user=current_user, route_id=route_id)
+    signature_before = trip_signature(before) if before else None
+
     try:
         route = service.update_route(user=current_user, route_id=route_id, route_in=route_in)
     except ValueError as e:
@@ -60,6 +68,10 @@ def update_route(service: RouteServiceDep, current_user: CurrentUser, route_id: 
 
     if route is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found.")
+
+    if signature_before is not None and trip_signature(route) != signature_before:
+        fetch_prices_for_route.delay(route_id=route.id, user_id=str(current_user.id))
+
     return route
 
 
