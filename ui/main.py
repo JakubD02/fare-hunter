@@ -34,6 +34,7 @@ HISTORY_COLUMNS: list[dict[str, Any]] = [
         "field": "departure_date",
         "align": "left",
     },
+    {"name": "duration", "label": "Departure duration", "field": "duration", "align": "left"},
     {"name": "return_date", "label": "Return", "field": "return_date", "align": "left"},
 ]
 
@@ -126,6 +127,17 @@ def format_price(value, currency: str) -> str:
     if value is None:
         return "-"
     return f"{float(value):,.2f}".replace(",", " ") + f" {currency}"
+
+
+def format_minutes(value: int | None) -> str:
+    if value is None:
+        return "-"
+    hours, minutes = divmod(int(value), 60)
+    return f"{hours}h {minutes:02d}m"
+
+
+def format_time(value: str | None) -> str:
+    return value[:5] if value else ""
 
 
 def airport_label(airport: dict | None) -> str:
@@ -274,7 +286,9 @@ def history_rows(history: list, airlines: dict[str, str], target_currency: str) 
             "airline": airlines.get(item.get("airline_id"), "Unknown"),
             "price": price_cell(item),
             "departure_date": format_date(item.get("departure_date")),
+            "departure_time": format_time(item.get("departure_time")),
             "return_date": format_date(item.get("return_date")),
+            "duration": format_minutes(item.get("duration")),
         }
         for item in history
     ]
@@ -294,8 +308,23 @@ def history_table(route_id: str, airlines: dict[str, str], target_currency: str)
             "rowsNumber": 0,
         },
     ).classes("w-full")
+    table.add_slot(
+        "body-cell-departure_date",
+        """
+        <q-td :props="props">
+            <span>{{ props.row.departure_date }}</span>
+            <span v-if="props.row.departure_time" style="color: #1f2a5a; font-weight: 700; margin-left: 6px;">
+                {{ props.row.departure_time }}
+            </span>
+        </q-td>
+        """,
+    )
     table.props('binary-state-sort no-data-label="No history" :rows-per-page-options="[]"')
     table.props(""":pagination-label="(first, end) => first + ' - ' + end" """)
+    table.props(
+        'table-header-class="text-weight-bold text-subtitle2 text-indigo-10 bg-blue-1" table-class="text-body1"'
+    )
+    table.props('table-style="font-size: 15px;" bordered separator="cell"')
 
     last_sort = {"sortBy": "fetched_at", "descending": True}
 
@@ -616,6 +645,7 @@ def route_page(route_id: str):
             ui.label(airport_label(destination)).classes("text-lg")
         trip_type = "Round trip" if route["return_date"] else "One way"
         ui.label(trip_type).classes("text-caption text-grey-7")
+        ui.label("All prices are for 1 passenger").classes("text-caption text-grey-7")
 
     alert_state = {"exists": False}
 
