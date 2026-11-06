@@ -20,8 +20,6 @@ def should_notify(
     converted_price = price * rate
     if converted_price >= alert.threshold_price:
         return False
-    if price >= alert.threshold_price:
-        return False
     if alert.last_notified_at is not None and _as_utc(now) - _as_utc(alert.last_notified_at) < NOTIFICATION_COOLDOWN:
         return False
     return True

@@ -55,3 +55,24 @@ def test_conversion_is_applied_not_raw_price() -> None:
     alert = make_alert()
 
     assert should_notify(alert, Decimal("450.00"), Decimal(2), NOW) is False
+
+
+def test_should_notify_when_converted_price_below_threshold_but_raw_price_above() -> None:
+    # Source PLN, route EUR: 2000 PLN * 0.23 = 460 EUR < 500 EUR.
+    # The old raw check (2000 >= 500) wrongly suppressed this alert.
+    alert = make_alert()
+
+    assert should_notify(alert, Decimal("2000.00"), PLN_TO_EUR, NOW) is True
+
+
+def test_should_not_notify_during_cooldown_even_if_converted_price_qualifies() -> None:
+    alert = make_alert(last_notified_at=NOW - timedelta(hours=1))
+
+    assert should_notify(alert, Decimal("2000.00"), PLN_TO_EUR, NOW) is False
+
+
+def test_naive_last_notified_at_is_treated_as_utc() -> None:
+    naive_recent = (NOW - timedelta(hours=2)).replace(tzinfo=None)
+    alert = make_alert(last_notified_at=naive_recent)
+
+    assert should_notify(alert, Decimal("450.00"), SAME_CURRENCY, NOW) is False
