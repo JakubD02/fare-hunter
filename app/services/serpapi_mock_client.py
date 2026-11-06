@@ -1,6 +1,6 @@
 import logging
 import random
-from datetime import date
+from datetime import date, time
 from decimal import ROUND_HALF_UP, Decimal
 
 from app.core.config import settings
@@ -31,9 +31,11 @@ class SerpApiMockClient:
                 airline=self._rng.choice(self._airline_names),
                 price=self._random_price(),
                 currency=Currency.PLN,
+                duration=self._rng.randint(60, 1200),
                 origin_code=origin_code,
                 destination_code=destination_code,
                 departure_date=departure_date,
+                departure_time=time(self._rng.randint(0, 23), self._rng.randint(0, 59)),
                 return_date=return_date,
             )
             for _ in range(settings.mock.mock_total_generated)

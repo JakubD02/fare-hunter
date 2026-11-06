@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -11,6 +11,7 @@ class FlightPriceBase(BaseModel):
     price: Price
     currency: Currency = Currency.PLN
     departure_date: date
+    departure_time: time | None = None
     return_date: date | None = None
 
     @model_validator(mode="after")
@@ -35,5 +36,6 @@ class FlightPriceRead(FlightPriceBase):
     route_id: str
     airline_id: str
     fetched_at: datetime
+    duration: int | None = None
 
     model_config = ConfigDict(from_attributes=True)

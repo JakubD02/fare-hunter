@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 
 from sqlalchemy import Enum as SqlEnum
@@ -23,6 +23,8 @@ class FlightPrice(IdModel):
         Numeric(settings.price.price_max_digits, settings.price.price_decimal_places), nullable=False
     )
     currency: Mapped[Currency] = mapped_column(SqlEnum(Currency), nullable=False)
+    duration: Mapped[int | None] = mapped_column()
     departure_date: Mapped[date] = mapped_column(nullable=False)
+    departure_time: Mapped[time | None] = mapped_column()
     return_date: Mapped[date | None] = mapped_column()
     fetched_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False, index=True)
