@@ -27,16 +27,25 @@ HISTORY_PAGE_SIZE = 10
 HISTORY_COLUMNS: list[dict[str, Any]] = [
     {"name": "fetched_at", "label": "Fetched", "field": "fetched_at", "align": "left", "sortable": True},
     {"name": "airline", "label": "Airline", "field": "airline", "align": "left", "sortable": True},
-    {"name": "price", "label": "Price", "field": "price", "align": "right", "sortable": True},
-    {
-        "name": "departure_date",
-        "label": "Departure",
-        "field": "departure_date",
-        "align": "left",
-    },
+    {"name": "price", "label": "Price", "field": "price", "align": "left", "sortable": True},
+    {"name": "departure_date", "label": "Departure", "field": "departure_date", "align": "left"},
     {"name": "duration", "label": "Departure duration", "field": "duration", "align": "left"},
     {"name": "return_date", "label": "Return", "field": "return_date", "align": "left"},
+    {"name": "layover", "label": "Layover", "field": "layover", "align": "left"},
 ]
+
+# Green "Direct" chip, orange "Layover" chip, grey dash when the value is unknown (older records)
+LAYOVER_SLOT = """
+<q-td :props="props">
+    <q-chip v-if="props.row.layover === true" dense square color="orange-2" text-color="orange-10" icon="connecting_airports">
+        Layover
+    </q-chip>
+    <q-chip v-else-if="props.row.layover === false" dense square color="green-2" text-color="green-10" icon="flight">
+        Direct
+    </q-chip>
+    <span v-else class="text-grey-6">-</span>
+</q-td>
+"""
 
 
 def error_text(response: httpx.Response) -> str:
@@ -288,10 +297,24 @@ def history_rows(history: list, airlines: dict[str, str], target_currency: str) 
             "departure_date": format_date(item.get("departure_date")),
             "departure_time": format_time(item.get("departure_time")),
             "return_date": format_date(item.get("return_date")),
+            "return_time": format_time(item.get("return_time")),
             "duration": format_minutes(item.get("duration")),
+            # Raw bool (or None); LAYOVER_SLOT decides how to render it
+            "layover": item.get("layover"),
         }
         for item in history
     ]
+
+
+def date_time_slot(date_field: str, time_field: str) -> str:
+    return f"""
+    <q-td :props="props">
+        <span>{{{{ props.row.{date_field} }}}}</span>
+        <span v-if="props.row.{time_field}" style="color: #1f2a5a; font-weight: 700; margin-left: 6px;">
+            {{{{ props.row.{time_field} }}}}
+        </span>
+    </q-td>
+    """
 
 
 def history_table(route_id: str, airlines: dict[str, str], target_currency: str):
@@ -308,17 +331,10 @@ def history_table(route_id: str, airlines: dict[str, str], target_currency: str)
             "rowsNumber": 0,
         },
     ).classes("w-full")
-    table.add_slot(
-        "body-cell-departure_date",
-        """
-        <q-td :props="props">
-            <span>{{ props.row.departure_date }}</span>
-            <span v-if="props.row.departure_time" style="color: #1f2a5a; font-weight: 700; margin-left: 6px;">
-                {{ props.row.departure_time }}
-            </span>
-        </q-td>
-        """,
-    )
+    table.add_slot("body-cell-departure_date", date_time_slot("departure_date", "departure_time"))
+    table.add_slot("body-cell-return_date", date_time_slot("return_date", "return_time"))
+    table.add_slot("body-cell-layover", LAYOVER_SLOT)
+
     table.props('binary-state-sort no-data-label="No history" :rows-per-page-options="[]"')
     table.props(""":pagination-label="(first, end) => first + ' - ' + end" """)
     table.props(
@@ -467,6 +483,7 @@ def routes_page():
 
     airports = fetch_all("/airports")
     codes = {a["id"]: a["iata_code"] for a in airports}
+    cities = {a["id"]: a["city"] for a in airports}
     options = {a["id"]: f"{a['iata_code']} – {a['city']}" for a in airports}
 
     max_routes = settings.route.max_routes_per_user
@@ -511,24 +528,45 @@ def routes_page():
             if not routes:
                 ui.label("No routes yet. Add the first one below.")
             for r in routes:
-                with ui.card().classes("w-full"):
-                    origin_code = codes.get(r["origin_id"], "?")
-                    destination_code = codes.get(r["destination_id"], "?")
-                    ui.label(f"{origin_code} → {destination_code}").classes("text-lg")
+                origin_code = codes.get(r["origin_id"], "?")
+                destination_code = codes.get(r["destination_id"], "?")
+                round_trip = r["return_date"] is not None
+                label = f"{origin_code} → {destination_code}"
+                with ui.card().classes("w-full q-pa-sm"):
+                    with ui.row().classes("w-full items-center justify-between no-wrap"):
+                        with ui.row().classes("items-baseline gap-2"):
+                            ui.label(label).classes("text-h6 text-weight-bold")
+                            ui.label(
+                                f"{cities.get(r['origin_id'], '?')} → {cities.get(r['destination_id'], '?')}"
+                            ).classes("text-caption text-grey-7")
+                        if round_trip:
+                            ui.chip("Round trip", icon="sync", color="indigo-1", text_color="indigo-10").props("dense")
+                        else:
+                            ui.chip("One way", icon="arrow_forward", color="teal-1", text_color="teal-10").props(
+                                "dense"
+                            )
 
-                    details = f"Departure: {format_date(r['departure_date'])}"
-                    if r["return_date"]:
-                        details += f"   Return: {format_date(r['return_date'])}"
-                    ui.label(details)
-
-                    with ui.row():
-                        ui.button("Details", on_click=lambda rid=r["id"]: ui.navigate.to(f"/routes/{rid}"))
-                        label = f"{origin_code} → {destination_code}"
-                        ui.button(
-                            "Delete",
-                            color="negative",
-                            on_click=lambda rid=r["id"], lbl=label: ask_remove(rid, lbl),
-                        )
+                    with ui.row().classes("w-full items-center justify-between no-wrap"):
+                        with ui.row().classes("items-center gap-1"):
+                            ui.icon("flight_takeoff", color="primary", size="sm")
+                            ui.label(format_date(r["departure_date"])).classes("text-body2")
+                            if round_trip:
+                                ui.icon("arrow_forward", size="xs", color="grey-6")
+                                ui.icon("flight_land", color="primary", size="sm")
+                                ui.label(format_date(r["return_date"])).classes("text-body2")
+                                nights = (parse_date(r["return_date"]) - parse_date(r["departure_date"])).days
+                                ui.label(f"· {nights} nights").classes("text-caption text-grey-7")
+                        with ui.row().classes("gap-1 no-wrap"):
+                            ui.button(
+                                "Details",
+                                icon="chevron_right",
+                                on_click=lambda rid=r["id"]: ui.navigate.to(f"/routes/{rid}"),
+                            ).props("flat dense color=primary")
+                            ui.button(
+                                "Delete",
+                                icon="delete",
+                                on_click=lambda rid=r["id"], lbl=label: ask_remove(rid, lbl),
+                            ).props("flat dense color=negative")
 
             pager = ui.row().classes("w-full items-center justify-between")
             pager.set_visibility(page["index"] > 0 or has_next)
@@ -682,14 +720,15 @@ def route_page(route_id: str):
 
         ui.button("Save changes", on_click=save_route)
 
-    with ui.row().classes("w-full items-start"):
-        with ui.card().classes("w-2/3"):
+    # Side by side from the md breakpoint up, stacked full width on narrower screens
+    with ui.row().classes("w-full items-start gap-4 flex-col md:flex-row md:flex-nowrap"):
+        with ui.card().classes("w-full md:flex-1 min-w-0"):
             ui.label("Statistics").classes("text-lg")
             show_stats(call("GET", f"/routes/{route_id}/stats", notify=False), route["currency"])
             ui.label("History").classes("text-lg q-mt-md")
             history_table(route_id, airlines, route["currency"])
 
-        with ui.card().classes("w-1/3"):
+        with ui.card().classes("w-full md:w-1/3"):
             ui.label("Price alert").classes("text-lg")
             active = ui.switch("Active", value=True)
             threshold = ui.number(f"Threshold ({route['currency']})", min=1).classes("w-full")
