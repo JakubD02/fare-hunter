@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,6 +13,8 @@ from app.models.airline import Airline
 from app.models.airport import Airport
 from app.models.route import Route
 from data import AIRLINES_DATA, AIRPORTS_DATA
+
+NOW = datetime.now(timezone.utc)
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
@@ -82,7 +84,8 @@ def other_user_route(client, other_registered_user, db):
     route_data = {
         "origin_id": origin.id,
         "destination_id": destination.id,
-        "departure_date": "2026-12-29",
+        "departure_date": (NOW.date() + timedelta(days=7)).isoformat(),
+        "currency": "EUR",
     }
     response = client.post(
         "/routes/",
@@ -168,7 +171,8 @@ def created_route(client, registered_user, db):
     route_data = {
         "origin_id": origin.id,
         "destination_id": destination.id,
-        "departure_date": "2026-11-15",
+        "departure_date": (NOW.date() + timedelta(days=7)).isoformat(),
+        "currency": "EUR",
     }
 
     response = client.post(
@@ -193,7 +197,8 @@ def route_data(db):
     return {
         "origin_id": origin.id,
         "destination_id": destination.id,
-        "departure_date": "2026-12-25",
+        "departure_date": (NOW.date() + timedelta(days=7)).isoformat(),
+        "currency": "EUR",
     }
 
 

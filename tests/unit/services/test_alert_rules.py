@@ -4,7 +4,7 @@ from decimal import Decimal
 from app.models.price_alert import PriceAlert
 from app.services.alert_rules import should_notify
 
-NOW = datetime(2026, 11, 2, 12, 0, tzinfo=timezone.utc)
+NOW = datetime.now(timezone.utc)
 THRESHOLD = Decimal("500.00")
 SAME_CURRENCY = Decimal(1)
 PLN_TO_EUR = Decimal("0.23")
