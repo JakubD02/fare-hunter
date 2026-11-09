@@ -20,10 +20,14 @@ def validate_departure_date(val: date) -> date:
     return val
 
 
-def validate_return_date(value: date | None, departure: date | None) -> date | None:
-    if value is not None and departure is not None and value < departure:
+def validate_return_date(val: date | None, departure: date | None) -> date | None:
+    if val is None:
+        return None
+    if departure is not None and val < departure:
         raise ValueError("Return date must not be before departure date")
-    return value
+    if val > _max_allowed_date():
+        raise ValueError(f"Return_date must be within {settings.route.max_days_ahead} days from today")
+    return val
 
 
 class RouteFields(BaseModel):
