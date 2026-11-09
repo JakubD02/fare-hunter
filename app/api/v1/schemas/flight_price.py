@@ -13,6 +13,8 @@ class FlightPriceBase(BaseModel):
     departure_date: date
     departure_time: time | None = None
     return_date: date | None = None
+    return_time: time | None = None
+    layover: bool | None = None
 
     @model_validator(mode="after")
     def validate_dates(self):

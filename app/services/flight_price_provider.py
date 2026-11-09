@@ -15,6 +15,8 @@ class FlightOffer(TypedDict):
     departure_date: date
     departure_time: time | None
     return_date: date | None
+    return_time: time | None
+    layover: bool | None
 
 
 class FlightPriceProvider(Protocol):

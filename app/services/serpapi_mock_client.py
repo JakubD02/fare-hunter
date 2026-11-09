@@ -37,6 +37,8 @@ class SerpApiMockClient:
                 departure_date=departure_date,
                 departure_time=time(self._rng.randint(0, 23), self._rng.randint(0, 59)),
                 return_date=return_date,
+                return_time=time(self._rng.randint(0, 23), self._rng.randint(0, 59)),
+                layover=False,
             )
             for _ in range(settings.mock.mock_total_generated)
         ]
