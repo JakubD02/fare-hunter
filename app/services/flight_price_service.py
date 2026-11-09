@@ -68,10 +68,8 @@ class FlightPriceService:
             len(by_currency),
         )
 
-        if preferred_currency is not None:
-            by_currency.sort(key=lambda row: row["currency"] != preferred_currency)
-
-        primary = by_currency[0] if by_currency else None
+        own_currency = [row for row in by_currency if row["currency"] == route.currency]
+        primary = own_currency[0] if own_currency else None
 
         return {
             "route_id": route.id,
@@ -128,6 +126,7 @@ class FlightPriceService:
         return saved
 
     def _to_price(self, route: Route, offer: FlightOffer) -> FlightPrice | None:
+        """Map a provider offer to an unsaved FlightPrice, or None if the airline is unknown."""
         airline_id = self._airlines.find_id(offer["airline"])
         if airline_id is None:
             logger.warning("unknown airline in offer airline=%s route_id=%s", offer["airline"], route.id)
@@ -141,4 +140,6 @@ class FlightPriceService:
             departure_date=route.departure_date,
             departure_time=offer["departure_time"],
             return_date=route.return_date,
+            return_time=offer["return_time"],
+            layover=offer["layover"],
         )
