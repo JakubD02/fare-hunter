@@ -119,6 +119,11 @@ def parse_date(text: str | None) -> date | None:
         return None
 
 
+def local_today() -> date:
+    """Today's date in the app timezone (not the server's)."""
+    return datetime.now(LOCAL_TZ).date()
+
+
 def max_day() -> date:
     """Latest departure or return date the API accepts."""
     return date.today() + timedelta(days=settings.route.max_days_ahead)

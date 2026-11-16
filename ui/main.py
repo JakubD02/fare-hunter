@@ -16,6 +16,7 @@ from ui.utils import (
     format_date,
     frame,
     history_table,
+    local_today,
     max_day,
     parse_date,
     require_login,
@@ -159,7 +160,10 @@ def routes_page():
                 destination_code = codes.get(r["destination_id"], "?")
                 round_trip = r["return_date"] is not None
                 label = f"{origin_code} → {destination_code}"
-                with ui.card().classes("w-full q-pa-sm"):
+                departure_date = parse_date(r["departure_date"])
+                is_past = departure_date is not None and departure_date < local_today()
+                card_classes = "w-full q-pa-sm" + (" bg-grey-4" if is_past else "")
+                with ui.card().classes(card_classes):
                     with ui.row().classes("w-full items-center justify-between no-wrap"):
                         with ui.row().classes("items-baseline gap-2"):
                             ui.label(label).classes("text-h6 text-weight-bold")
