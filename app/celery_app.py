@@ -9,7 +9,7 @@ celery_app = Celery(
     "fare_hunter",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["app.tasks.price_tasks"],
+    include=["app.tasks.price_tasks", "app.tasks.email_tasks"],
 )
 
 celery_app.conf.beat_schedule = settings.CELERY_BEAT_SCHEDULE
