@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from starlette import status
 
 from app.api.auth import CurrentUser
@@ -25,9 +25,10 @@ def get_history(
     pagination: PaginationDep,
     sort_by: HistorySortField = "fetched_at",
     order: SortOrder = "desc",
+    layover: bool | None = Query(default=None),
 ) -> list[FlightPriceRead]:
     history = service.get_history(
-        user, route_id, limit=pagination.limit, offset=pagination.offset, sort_by=sort_by, order=order
+        user, route_id, limit=pagination.limit, offset=pagination.offset, sort_by=sort_by, order=order, layover=layover
     )
     if history is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Route not found")

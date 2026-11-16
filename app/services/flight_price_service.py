@@ -37,13 +37,20 @@ class FlightPriceService:
         offset: int,
         sort_by: HistorySortField = "fetched_at",
         order: SortOrder = "desc",
+        layover: bool | None = None,
     ) -> list[FlightPrice] | None:
         route = self._routes.get_route(user, route_id)
         if route is None:
             logger.warning("history rejected: route not found route_id=%s user_id=%s", route_id, user.id)
             return None
         history = self._prices.list_for_route(
-            route_id, limit=limit, offset=offset, round_trip=route.return_date is not None, sort_by=sort_by, order=order
+            route_id,
+            limit=limit,
+            offset=offset,
+            round_trip=route.return_date is not None,
+            sort_by=sort_by,
+            order=order,
+            layover=layover,
         )
         logger.debug("history loaded route_id=%s rows=%d", route_id, len(history))
         return history
@@ -140,6 +147,6 @@ class FlightPriceService:
             departure_date=route.departure_date,
             departure_time=offer["departure_time"],
             return_date=route.return_date,
-            return_time=offer["return_time"],
+            return_time=offer["return_time"] if route.return_date else None,
             layover=offer["layover"],
         )

@@ -26,6 +26,7 @@ class FlightPriceRepository(BaseRepository[FlightPrice]):
         "fetched_at": FlightPrice.fetched_at,
         "price": FlightPrice.price,
         "airline": Airline.name,
+        "duration": FlightPrice.duration,
     }
 
     def list_for_route(
@@ -36,12 +37,15 @@ class FlightPriceRepository(BaseRepository[FlightPrice]):
         round_trip: bool,
         sort_by: HistorySortField = "fetched_at",
         order: SortOrder = "desc",
+        layover: bool | None = None,
     ) -> list[FlightPrice]:
         trip_filter = FlightPrice.return_date.is_not(None) if round_trip else FlightPrice.return_date.is_(None)
         column = self.SORT_COLUMNS[sort_by]
         direction = column.desc() if order == "desc" else column.asc()
 
         query = select(FlightPrice).where(FlightPrice.route_id == route_id, trip_filter)
+        if layover is not None:
+            query = query.where(FlightPrice.layover == layover)
         if sort_by == "airline":
             query = query.join(Airline, FlightPrice.airline_id == Airline.id)
 

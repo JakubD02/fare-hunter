@@ -24,6 +24,9 @@ LOCAL_TZ = ZoneInfo(settings.APP_TIMEZONE)
 
 HISTORY_PAGE_SIZE = 10
 
+# Toggle value -> `layover` query param (None means no filter)
+LAYOVER_FILTERS = {"all": None, "direct": False, "layover": True}
+
 HISTORY_COLUMNS: list[dict[str, Any]] = [
     {"name": "fetched_at", "label": "Fetched", "field": "fetched_at", "align": "left", "sortable": True},
     {"name": "airline", "label": "Airline", "field": "airline", "align": "left", "sortable": True},
@@ -303,7 +306,7 @@ def history_rows(history: list, airlines: dict[str, str], target_currency: str) 
             "departure_date": format_date(item.get("departure_date")),
             "departure_time": format_time(item.get("departure_time")),
             "return_date": format_date(item.get("return_date")),
-            "return_time": format_time(item.get("return_time")),
+            "return_time": format_time(item.get("return_time")) if item.get("return_date") else "",
             "duration": format_minutes(item.get("duration")),
             # Raw bool (or None); LAYOVER_SLOT decides how to render it
             "layover": item.get("layover"),
@@ -324,7 +327,13 @@ def date_time_slot(date_field: str, time_field: str) -> str:
 
 
 def history_table(route_id: str, airlines: dict[str, str], target_currency: str):
-    """Price history table with server-side sorting and paging."""
+    """Price history table with server-side sorting, layover filter and paging."""
+    layover_toggle = ui.toggle(
+        {"all": "All", "direct": "Direct", "layover": "With layover"},
+        value="all",
+        on_change=lambda _: load({**table.pagination, "page": 1}),
+    )
+
     table = ui.table(
         columns=HISTORY_COLUMNS,
         rows=[],
@@ -360,20 +369,17 @@ def history_table(route_id: str, airlines: dict[str, str], target_currency: str)
 
         page_size = p["rowsPerPage"]
         offset = (p["page"] - 1) * page_size
-        data = (
-            call(
-                "GET",
-                f"/routes/{route_id}/history",
-                params={
-                    "sort_by": sort_by,
-                    "order": "desc" if descending else "asc",
-                    "limit": page_size + 1,
-                    "offset": offset,
-                },
-                notify=False,
-            )
-            or []
-        )
+        params = {
+            "sort_by": sort_by,
+            "order": "desc" if descending else "asc",
+            "limit": page_size + 1,
+            "offset": offset,
+        }
+        layover = LAYOVER_FILTERS[layover_toggle.value]
+        if layover is not None:
+            params["layover"] = layover
+
+        data = call("GET", f"/routes/{route_id}/history", params=params, notify=False) or []
 
         has_next = len(data) > page_size
         table.rows = history_rows(data[:page_size], airlines, target_currency)
