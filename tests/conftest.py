@@ -7,12 +7,15 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.main import app
 from app.models import Base
 from app.models.airline import Airline
 from app.models.airport import Airport
 from app.models.route import Route
 from data import AIRLINES_DATA, AIRPORTS_DATA
+
+limiter.enabled = False
 
 NOW = datetime.now(timezone.utc)
 

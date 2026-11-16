@@ -29,6 +29,7 @@ dependencies = [
     "alembic>=1.13.1",
     "bandit>=1.7.9",
     "nicegui>=3.18.0",
+    "slowapi>=0.1.10",
 ]
 
 [dependency-groups]

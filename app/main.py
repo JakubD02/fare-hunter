@@ -2,15 +2,17 @@ from fastapi import FastAPI
 
 from app.api.v1.endpoints.routers import alerts, auth, currency, reference, routes, statistics
 from app.core.logging import configure_logging
+from app.core.rate_limit import setup_rate_limiting
 
 configure_logging()
+
 
 app = FastAPI(
     title="Fare hunter - flight tracker API",
     description="Backend API for automated flight price tracking and alerts.",
     version="0.1.0",
 )
-
+setup_rate_limiting(app)
 
 app.include_router(auth.router)
 app.include_router(reference.router)

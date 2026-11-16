@@ -1,3 +1,6 @@
+from app.core.rate_limit import limiter
+
+
 def test_login_existed_user(client, registered_user):
     """Verify login and password using OAuth2 Form"""
     response = client.post(
@@ -49,3 +52,18 @@ def test_login_with_empty_data(client):
         },
     )
     assert response.status_code == 422
+
+
+def test_login_is_rate_limited(client):
+    limiter.enabled = True
+    limiter.reset()
+    try:
+        codes = [
+            client.post("/auth/token", data={"username": "x@x.com", "password": "zle-haslo"}).status_code
+            for _ in range(3)
+        ]
+        assert codes[:2] == [401, 401]
+        assert codes[2] == 429
+    finally:
+        limiter.enabled = False
+        limiter.reset()

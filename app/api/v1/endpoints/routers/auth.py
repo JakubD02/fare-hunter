@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette import status
 
@@ -8,6 +8,7 @@ from app.api.auth import CurrentUser
 from app.api.v1.dependencies import AuthServiceDep, UserServiceDep
 from app.api.v1.schemas.token import AccessToken, RefreshRequest, TokenPair
 from app.api.v1.schemas.user import UserCreate, UserRead
+from app.core.rate_limit import limiter
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -19,7 +20,8 @@ form_data_dependency = Annotated[OAuth2PasswordRequestForm, Depends()]
 
 
 @router.post("/token", response_model=TokenPair)
-def login(service: AuthServiceDep, form: form_data_dependency):
+@limiter.limit("2/minute")
+def login(request: Request, service: AuthServiceDep, form: form_data_dependency):
     user = service.authenticate(form.username, form.password)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong login or password!")
@@ -31,7 +33,8 @@ def login(service: AuthServiceDep, form: form_data_dependency):
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserRead)
-def register(user_in: UserCreate, service: UserServiceDep):
+@limiter.limit("2/minute")
+def register(request: Request, user_in: UserCreate, service: UserServiceDep):
     user = service.register(user_in)
     if not user:
         raise HTTPException(
