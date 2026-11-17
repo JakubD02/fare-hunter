@@ -9,6 +9,7 @@ from app.repositories.route_repository import RouteRepository
 from app.repositories.user_repository import UserRepository
 from app.services.alert_service import AlertService
 from app.services.auth_service import AuthService
+from app.services.featured_route_service import FeaturedRouteService
 from app.services.flight_price_provider import FlightPriceProvider
 from app.services.flight_price_service import FlightPriceService
 from app.services.reference_service import ReferenceService
@@ -45,3 +46,7 @@ def build_flight_price_service(db: Session, provider: FlightPriceProvider | None
 
 def build_reference_service(db: Session) -> ReferenceService:
     return ReferenceService(airports=AirportRepository(db), airlines=AirlineRepository(db))
+
+
+def build_featured_route_service(db: Session) -> FeaturedRouteService:
+    return FeaturedRouteService(routes=RouteRepository(db))

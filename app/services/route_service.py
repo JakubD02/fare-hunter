@@ -59,9 +59,14 @@ class RouteService:
         )
         return route
 
-    def list_tracking_targets(self, today: date) -> list[tuple[str, str]]:
-        targets = self._routes.list_tracking_targets(today)
-        logger.debug("tracking targets listed count=%d today=%s", len(targets), today)
+    def list_tracking_targets(self, today: date, featured_only: bool = False) -> list[tuple[str, str]]:
+        targets = self._routes.list_tracking_targets(today, featured_only=featured_only)
+        logger.debug(
+            "tracking targets listed count=%d today=%s featured_only=%s",
+            len(targets),
+            today,
+            featured_only,
+        )
         return targets
 
     def update_route(self, user: User, route_id: str, route_in: RouteUpdate) -> Route | None:

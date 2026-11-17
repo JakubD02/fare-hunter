@@ -11,11 +11,13 @@ from app.services.auth_service import AuthService
 from app.services.factories import (
     build_alert_service,
     build_auth_service,
+    build_featured_route_service,
     build_flight_price_service,
     build_reference_service,
     build_route_service,
     build_user_service,
 )
+from app.services.featured_route_service import FeaturedRouteService
 from app.services.flight_price_service import FlightPriceService
 from app.services.reference_service import ReferenceService
 from app.services.route_service import RouteService
@@ -87,3 +89,10 @@ def get_reference_service(db: DbSession) -> ReferenceService:
 
 
 ReferenceServiceDep = Annotated[ReferenceService, Depends(get_reference_service)]
+
+
+def get_featured_route_service(db: DbSession) -> FeaturedRouteService:
+    return build_featured_route_service(db)
+
+
+FeaturedRouteServiceDep = Annotated[FeaturedRouteService, Depends(get_featured_route_service)]
