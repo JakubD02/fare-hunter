@@ -1,9 +1,11 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import httpx
 
 from app.celery_app import celery_app
+from app.core.config import settings
 from app.core.database import SessionLocal
 from app.services.factories import (
     build_alert_service,
@@ -42,7 +44,9 @@ def fetch_prices_for_route(self, route_id: str, user_id: str) -> int:
 
         flight_price = min(prices, key=lambda p: p.price)
         should_send = build_alert_service(db).check_price(
-            route=route, flight_price=flight_price, now=datetime.now(timezone.utc)
+            route=route,
+            flight_price=flight_price,
+            now=datetime.now(ZoneInfo(settings.APP_TIMEZONE)),
         )
         db.commit()
 
@@ -63,11 +67,11 @@ def fetch_prices_for_route(self, route_id: str, user_id: str) -> int:
 
 
 @celery_app.task
-def fetch_all_prices_periodic() -> int:
-    today = datetime.now(timezone.utc).date()
+def fetch_all_prices_periodic(featured_only: bool = False) -> int:
+    today = datetime.now(ZoneInfo(settings.APP_TIMEZONE)).date()
 
     with SessionLocal() as db:
-        targets = build_route_service(db).list_tracking_targets(today)
+        targets = build_route_service(db).list_tracking_targets(today, featured_only=featured_only)
     queued = 0
     for route_id, user_id in targets:
         try:

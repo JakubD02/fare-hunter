@@ -29,10 +29,13 @@ class FlightPriceService:
         self._routes = routes
         self._provider = provider
 
+    # --- user-scoped API (ownership checked here) ---
+
     def get_history(
         self,
         user: User,
         route_id: str,
+        *,
         limit: int,
         offset: int,
         sort_by: HistorySortField = "fetched_at",
@@ -43,8 +46,42 @@ class FlightPriceService:
         if route is None:
             logger.warning("history rejected: route not found route_id=%s user_id=%s", route_id, user.id)
             return None
+        return self.get_history_for_route(
+            route,
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            order=order,
+            layover=layover,
+        )
+
+    def get_stats(
+        self,
+        user: User,
+        route_id: str,
+        days: int = 30,
+        preferred_currency: str | None = None,
+    ) -> dict | None:
+        route = self._routes.get_route(user, route_id)
+        if route is None:
+            logger.warning("stats rejected: route not found route_id=%s user_id=%s", route_id, user.id)
+            return None
+        return self.get_stats_for_route(route, days=days, preferred_currency=preferred_currency)
+
+    # --- route-scoped API (caller has already verified access) ---
+
+    def get_history_for_route(
+        self,
+        route: Route,
+        *,
+        limit: int,
+        offset: int,
+        sort_by: HistorySortField = "fetched_at",
+        order: SortOrder = "desc",
+        layover: bool | None = None,
+    ) -> list[FlightPrice]:
         history = self._prices.list_for_route(
-            route_id,
+            route.id,
             limit=limit,
             offset=offset,
             round_trip=route.return_date is not None,
@@ -52,28 +89,18 @@ class FlightPriceService:
             order=order,
             layover=layover,
         )
-        logger.debug("history loaded route_id=%s rows=%d", route_id, len(history))
+        logger.debug("history loaded route_id=%s rows=%d", route.id, len(history))
         return history
 
-    def get_stats(
-        self, user: User, route_id: str, days: int = 30, preferred_currency: str | None = None
-    ) -> dict | None:
-        route = self._routes.get_route(user, route_id)
-        if route is None:
-            logger.warning("stats rejected: route not found route_id=%s user_id=%s", route_id, user.id)
-            return None
-
-        if preferred_currency is None:
-            preferred_currency = route.currency
-
+    def get_stats_for_route(
+        self,
+        route: Route,
+        days: int = 30,
+        preferred_currency: str | None = None,
+    ) -> dict:
         since = datetime.now(timezone.utc) - timedelta(days=days)
         by_currency = self._prices.aggregate_since(route.id, since, round_trip=route.return_date is not None)
-        logger.debug(
-            "stats computed route_id=%s days=%d currencies=%d",
-            route.id,
-            days,
-            len(by_currency),
-        )
+        logger.debug("stats computed route_id=%s days=%d currencies=%d", route.id, days, len(by_currency))
 
         own_currency = [row for row in by_currency if row["currency"] == route.currency]
         primary = own_currency[0] if own_currency else None
@@ -88,6 +115,8 @@ class FlightPriceService:
             "avg_price": primary["avg_price"] if primary else None,
             "by_currency": by_currency,
         }
+
+    # --- provider / persistence ---
 
     def refresh_prices(self, user: User, route_id: str) -> list[FlightPrice] | None:
         if self._provider is None:

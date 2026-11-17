@@ -127,10 +127,21 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     LOG_LEVEL: str = "DEBUG"
     APP_TIMEZONE: str = "Europe/Warsaw"
+    DEMO_MODE: bool = False
+    # Owner of featured routes (created by seed_featured.py when DEMO_MODE=True)
+    SYSTEM_USER_EMAIL: str = "system@farehunter.app"
 
-    # celery beat schedule
+    # celery beat schedule: full mode (all user routes)
     CELERY_BEAT_SCHEDULE: ClassVar[dict] = {
         "fetch-prices-every-8h": {
+            "task": "app.tasks.price_tasks.fetch_all_prices_periodic",
+            "schedule": crontab(minute=0, hour="0,8,16"),
+        }
+    }
+
+    # celery beat schedule: demo mode (featured routes only)
+    CELERY_BEAT_SCHEDULE_DEMO: ClassVar[dict] = {
+        "refresh-featured-prices": {
             "task": "app.tasks.price_tasks.fetch_all_prices_periodic",
             "schedule": crontab(minute=0, hour="0,8,16"),
         }

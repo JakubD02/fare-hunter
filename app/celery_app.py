@@ -12,7 +12,9 @@ celery_app = Celery(
     include=["app.tasks.price_tasks", "app.tasks.email_tasks"],
 )
 
-celery_app.conf.beat_schedule = settings.CELERY_BEAT_SCHEDULE
+celery_app.conf.beat_schedule = (
+    dict(settings.CELERY_BEAT_SCHEDULE_DEMO) if settings.DEMO_MODE else dict(settings.CELERY_BEAT_SCHEDULE)
+)
 
 celery_app.conf.update(
     task_serializer="json",
