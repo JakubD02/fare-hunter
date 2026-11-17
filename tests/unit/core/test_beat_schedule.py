@@ -42,4 +42,5 @@ class TestBeatSchedule:
 
     def test_celery_app_loads_schedule_from_settings(self):
         """Guards against the schedule being defined but never wired into Celery"""
-        assert celery_app.conf.beat_schedule == settings.CELERY_BEAT_SCHEDULE
+        expected = settings.CELERY_BEAT_SCHEDULE_DEMO if settings.DEMO_MODE else settings.CELERY_BEAT_SCHEDULE
+        assert celery_app.conf.beat_schedule == expected

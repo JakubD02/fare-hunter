@@ -22,6 +22,7 @@ def get_history(
     route_id: str,
     service: FlightPriceServiceDep,
     user: CurrentUser,
+    *,
     pagination: PaginationDep,
     sort_by: HistorySortField = "fetched_at",
     order: SortOrder = "desc",
