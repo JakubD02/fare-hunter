@@ -29,6 +29,29 @@ class FlightPriceRepository(BaseRepository[FlightPrice]):
         "duration": FlightPrice.duration,
     }
 
+    def cheapest_per_airline(self, route_id: str) -> list[tuple[FlightPrice, int]]:
+        ranked = (
+            select(
+                FlightPrice.id,
+                func.row_number()
+                .over(
+                    partition_by=FlightPrice.airline_id,
+                    order_by=(FlightPrice.price.asc(), FlightPrice.fetched_at.desc()),
+                )
+                .label("rn"),
+                func.count().over(partition_by=FlightPrice.airline_id).label("offers"),
+            )
+            .where(FlightPrice.route_id == route_id)
+            .subquery()
+        )
+        stmt = (
+            select(FlightPrice, ranked.c.offers)
+            .join(ranked, FlightPrice.id == ranked.c.id)
+            .where(ranked.c.rn == 1)
+            .order_by(FlightPrice.price.asc())
+        )
+        return [(row[0], row[1]) for row in self._db.execute(stmt).all()]
+
     def list_for_route(
         self,
         route_id: str,
@@ -38,6 +61,7 @@ class FlightPriceRepository(BaseRepository[FlightPrice]):
         sort_by: HistorySortField = "fetched_at",
         order: SortOrder = "desc",
         layover: bool | None = None,
+        airline_id: str | None = None,
     ) -> list[FlightPrice]:
         trip_filter = FlightPrice.return_date.is_not(None) if round_trip else FlightPrice.return_date.is_(None)
         column = self.SORT_COLUMNS[sort_by]
@@ -48,6 +72,8 @@ class FlightPriceRepository(BaseRepository[FlightPrice]):
             query = query.where(FlightPrice.layover == layover)
         if sort_by == "airline":
             query = query.join(Airline, FlightPrice.airline_id == Airline.id)
+        if airline_id is not None:
+            query = query.where(FlightPrice.airline_id == airline_id)
 
         query = query.order_by(direction.nulls_last(), FlightPrice.id).limit(limit).offset(offset)
         return list(self._db.scalars(query))

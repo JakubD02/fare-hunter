@@ -41,6 +41,7 @@ class FlightPriceService:
         sort_by: HistorySortField = "fetched_at",
         order: SortOrder = "desc",
         layover: bool | None = None,
+        airline_id: str | None = None,
     ) -> list[FlightPrice] | None:
         route = self._routes.get_route(user, route_id)
         if route is None:
@@ -53,6 +54,7 @@ class FlightPriceService:
             sort_by=sort_by,
             order=order,
             layover=layover,
+            airline_id=airline_id,
         )
 
     def get_stats(
@@ -69,6 +71,15 @@ class FlightPriceService:
         return self.get_stats_for_route(route, days=days, preferred_currency=preferred_currency)
 
     # --- route-scoped API (caller has already verified access) ---
+    def get_cheapest_per_airline_for_route(self, route: Route) -> list[tuple[FlightPrice, int]]:
+        return self._prices.cheapest_per_airline(route.id)
+
+    def get_cheapest_per_airline(self, user: User, route_id: str) -> list[tuple[FlightPrice, int]] | None:
+        route = self._routes.get_route(user, route_id)
+        if route is None:
+            logger.warning("airlines rejected: route not found route_id=%s user_id=%s", route_id, user.id)
+            return None
+        return self.get_cheapest_per_airline_for_route(route)
 
     def get_history_for_route(
         self,
@@ -79,6 +90,7 @@ class FlightPriceService:
         sort_by: HistorySortField = "fetched_at",
         order: SortOrder = "desc",
         layover: bool | None = None,
+        airline_id: str | None = None,
     ) -> list[FlightPrice]:
         history = self._prices.list_for_route(
             route.id,
@@ -88,6 +100,7 @@ class FlightPriceService:
             sort_by=sort_by,
             order=order,
             layover=layover,
+            airline_id=airline_id,
         )
         logger.debug("history loaded route_id=%s rows=%d", route.id, len(history))
         return history

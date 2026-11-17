@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from starlette import status
 
 from app.api.v1.dependencies import FeaturedRouteServiceDep, FlightPriceServiceDep, PaginationDep
-from app.api.v1.schemas.featured import FeaturedRouteRead
+from app.api.v1.schemas.featured import AirlineCheapestRead, FeaturedRouteRead
 from app.api.v1.schemas.flight_price import FlightPriceRead, FlightStats
 from app.enums.sorting import HistorySortField, SortOrder
 
@@ -47,6 +47,7 @@ def get_featured_history(
     sort_by: HistorySortField = "fetched_at",
     order: SortOrder = "desc",
     layover: bool | None = Query(default=None),
+    airline_id: str | None = Query(default=None),
 ):
     route = routes.get_featured_route(route_id)
     if route is None:
@@ -59,5 +60,29 @@ def get_featured_history(
         sort_by=sort_by,
         order=order,
         layover=layover,
+        airline_id=airline_id,
     )
     return history
+
+
+@router.get("/{route_id}/airlines", response_model=list[AirlineCheapestRead])
+def cheapest_per_airline(
+    route_id: str,
+    featured: FeaturedRouteServiceDep,
+    prices: FlightPriceServiceDep,
+) -> list[AirlineCheapestRead]:
+    route = featured.get_featured_route(route_id)
+    if route is None:
+        raise HTTPException(status_code=404, detail="Route not found")
+
+    return [
+        AirlineCheapestRead(
+            airline_id=price.airline_id,
+            price=price.price,
+            currency=price.currency,
+            departure_date=price.departure_date,
+            fetched_at=price.fetched_at,
+            offers_count=count,
+        )
+        for price, count in prices.get_cheapest_per_airline_for_route(route)
+    ]

@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import date, datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -12,3 +13,12 @@ class FeaturedRouteRead(BaseModel):
     departure_date: date
     return_date: date | None
     currency: str
+
+
+class AirlineCheapestRead(BaseModel):
+    airline_id: str
+    price: Decimal
+    currency: str
+    departure_date: date
+    fetched_at: datetime
+    offers_count: int
