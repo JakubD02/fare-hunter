@@ -32,7 +32,7 @@ HISTORY_COLUMNS: list[dict[str, Any]] = [
     {"name": "airline", "label": "Airline", "field": "airline", "align": "left", "sortable": True},
     {"name": "price", "label": "Price", "field": "price", "align": "left", "sortable": True},
     {"name": "departure_date", "label": "Departure", "field": "departure_date", "align": "left"},
-    {"name": "duration", "label": "Departure duration", "field": "duration", "align": "left"},
+    {"name": "duration", "label": "Departure duration", "field": "duration", "align": "left", "sortable": True},
     {"name": "return_date", "label": "Return", "field": "return_date", "align": "left"},
     {"name": "layover", "label": "Layover", "field": "layover", "align": "left"},
 ]
@@ -194,12 +194,13 @@ def logout():
     ui.navigate.to("/login")
 
 
-def frame(title: str):
+def frame(title: str, demo: bool = False):
     with ui.header().classes("items-center justify-between"):
         ui.label("🛫 Fare Hunter").classes("text-lg font-bold")
-        with ui.row():
-            ui.button("Routes", on_click=lambda: ui.navigate.to("/")).props("flat color=white")
-            ui.button("Log out", on_click=logout).props("flat color=white")
+        if not demo:
+            with ui.row():
+                ui.button("Routes", on_click=lambda: ui.navigate.to("/")).props("flat color=white")
+                ui.button("Log out", on_click=logout).props("flat color=white")
     ui.label(title).classes("text-2xl q-my-md")
 
 
@@ -331,8 +332,11 @@ def date_time_slot(date_field: str, time_field: str) -> str:
     """
 
 
-def history_table(route_id: str, airlines: dict[str, str], target_currency: str):
-    """Price history table with server-side sorting, layover filter and paging."""
+def history_table(base_path: str, airlines: dict[str, str], target_currency: str):
+    """Price history table with server-side sorting, layover filter and paging.
+
+    base_path is the route prefix, e.g. "/routes/{id}" or "/featured/routes/{id}".
+    """
     layover_toggle = ui.toggle(
         {"all": "All", "direct": "Direct", "layover": "With layover"},
         value="all",
@@ -384,7 +388,7 @@ def history_table(route_id: str, airlines: dict[str, str], target_currency: str)
         if layover is not None:
             params["layover"] = layover
 
-        data = call("GET", f"/routes/{route_id}/history", params=params, notify=False) or []
+        data = call("GET", f"{base_path}/history", params=params, notify=False) or []
 
         has_next = len(data) > page_size
         table.rows = history_rows(data[:page_size], airlines, target_currency)

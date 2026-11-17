@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from nicegui import app, ui
 
 from app.core.config import settings
+from ui.demo import featured_page, featured_route_page
 from ui.utils import (
     CURRENCIES,
     PASSWORD_HINT,
@@ -25,7 +26,6 @@ from ui.utils import (
 )
 
 
-@ui.page("/login")
 def login_page():
     mode = {"register": False}
 
@@ -100,7 +100,6 @@ def login_page():
         switch_button = ui.button("I don't have an account", on_click=toggle_mode).props("flat").classes("w-full")
 
 
-@ui.page("/")
 def routes_page():
     if not require_login():
         return
@@ -288,7 +287,6 @@ def routes_page():
     refresh()
 
 
-@ui.page("/routes/{route_id}")
 def route_page(route_id: str):
     if not require_login():
         return
@@ -357,7 +355,7 @@ def route_page(route_id: str):
             ui.label("Statistics").classes("text-lg")
             show_stats(call("GET", f"/routes/{route_id}/stats", notify=False), route["currency"])
             ui.label("History").classes("text-lg q-mt-md")
-            history_table(route_id, airlines, route["currency"])
+            history_table(f"/routes/{route_id}", airlines, route["currency"])
 
         with ui.card().classes("w-full md:w-1/3"):
             ui.label("Price alert").classes("text-lg")
@@ -411,6 +409,15 @@ def route_page(route_id: str):
         alert_state["exists"] = True
         threshold.value = float(alert["threshold_price"])
         active.value = alert["is_active"]
+
+
+if settings.DEMO_MODE:
+    ui.page("/")(featured_page)
+    ui.page("/routes/{route_id}")(featured_route_page)
+else:
+    ui.page("/login")(login_page)
+    ui.page("/")(routes_page)
+    ui.page("/routes/{route_id}")(route_page)
 
 
 if __name__ in {"__main__", "__mp_main__"}:
