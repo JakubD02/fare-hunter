@@ -265,7 +265,7 @@ def show_stats(stats: dict | None, target_currency: str):
     converted = rate is not None and source_currency != target_currency
 
     def tile(label: str, value) -> None:
-        if converted:
+        if converted and rate is not None:
             stat_tile(
                 label,
                 "≈ " + format_price(float(value) * rate, target_currency),
@@ -332,11 +332,18 @@ def date_time_slot(date_field: str, time_field: str) -> str:
     """
 
 
-def history_table(base_path: str, airlines: dict[str, str], target_currency: str):
+def history_table(
+    base_path: str,
+    airlines: dict[str, str],
+    target_currency: str,
+    airline_id: str | None = None,
+) -> ui.table:
     """Price history table with server-side sorting, layover filter and paging.
 
     base_path is the route prefix, e.g. "/routes/{id}" or "/featured/routes/{id}".
     """
+    table: ui.table
+
     layover_toggle = ui.toggle(
         {"all": "All", "direct": "Direct", "layover": "With layover"},
         value="all",
@@ -387,6 +394,8 @@ def history_table(base_path: str, airlines: dict[str, str], target_currency: str
         layover = LAYOVER_FILTERS[layover_toggle.value]
         if layover is not None:
             params["layover"] = layover
+        if airline_id is not None:
+            params["airline_id"] = airline_id
 
         data = call("GET", f"{base_path}/history", params=params, notify=False) or []
 
@@ -398,6 +407,41 @@ def history_table(base_path: str, airlines: dict[str, str], target_currency: str
     table.on("request", lambda e: load(e.args["pagination"]))
     load(table.pagination)
     return table
+
+
+def airline_history(base_path: str, airlines: dict[str, str], currency: str) -> None:
+    """Cheapest offer per airline; clicking a row shows that airline's history."""
+
+    def show_airline(airline_id: str | None) -> None:
+        detail.clear()
+        if airline_id is None:
+            return
+        with detail:
+            ui.button("← All airlines", on_click=lambda: show_airline(None)).props("flat dense")
+            history_table(base_path, airlines, currency, airline_id=airline_id)
+
+    rows = call("GET", f"{base_path}/airlines", notify=False) or []
+    table = ui.table(
+        columns=[
+            {"name": "airline", "label": "Airline", "field": "airline", "align": "left"},
+            {"name": "price", "label": "Cheapest", "field": "price_text", "align": "left"},
+            {"name": "departure", "label": "Departure", "field": "departure", "align": "left"},
+            {"name": "offers", "label": "Offers", "field": "offers_count", "align": "right"},
+        ],
+        rows=[
+            {
+                **r,
+                "airline": airlines.get(r["airline_id"], "?"),
+                "price_text": f"{float(r['price']):.2f} {r['currency']}",
+                "departure": format_date(r["departure_date"]),
+            }
+            for r in rows
+        ],
+        row_key="airline_id",
+    )
+    detail = ui.column().classes("w-full")
+    table.on("rowClick", lambda e: show_airline(e.args[1]["airline_id"]))
+    show_airline(rows[0]["airline_id"] if rows else None)
 
 
 def set_day_range(picker: ui.date, min_day: date, max_day_value: date):

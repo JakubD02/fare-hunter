@@ -1,12 +1,12 @@
 from nicegui import ui
 
 from ui.utils import (
+    airline_history,
     airport_label,
     call,
     fetch_all,
     format_date,
     frame,
-    history_table,
     show_stats,
 )
 
@@ -81,4 +81,4 @@ def featured_route_page(route_id: str):
             ui.label("Statistics").classes("text-lg")
             show_stats(call("GET", f"/featured/routes/{route_id}/stats", notify=False), route["currency"])
             ui.label("History").classes("text-lg q-mt-md")
-            history_table(f"/featured/routes/{route_id}", airlines, route["currency"])
+            airline_history(f"/featured/routes/{route_id}", airlines, route["currency"])

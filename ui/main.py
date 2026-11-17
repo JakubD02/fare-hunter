@@ -8,6 +8,7 @@ from ui.utils import (
     CURRENCIES,
     PASSWORD_HINT,
     ROUTES_PER_PAGE,
+    airline_history,
     airport_label,
     call,
     confirm_delete,
@@ -16,7 +17,6 @@ from ui.utils import (
     fetch_all,
     format_date,
     frame,
-    history_table,
     local_today,
     max_day,
     parse_date,
@@ -184,8 +184,11 @@ def routes_page():
                                 ui.icon("arrow_forward", size="xs", color="grey-6")
                                 ui.icon("flight_land", color="primary", size="sm")
                                 ui.label(format_date(r["return_date"])).classes("text-body2")
-                                nights = (parse_date(r["return_date"]) - parse_date(r["departure_date"])).days
-                                ui.label(f"· {nights} nights").classes("text-caption text-grey-7")
+                                return_d = parse_date(r["return_date"])
+                                departure_d = parse_date(r["departure_date"])
+                                if return_d is not None and departure_d is not None:
+                                    nights = (return_d - departure_d).days
+                                    ui.label(f"· {nights} nights").classes("text-caption text-grey-7")
                         with ui.row().classes("gap-1 no-wrap"):
                             ui.button(
                                 "Details",
@@ -355,7 +358,7 @@ def route_page(route_id: str):
             ui.label("Statistics").classes("text-lg")
             show_stats(call("GET", f"/routes/{route_id}/stats", notify=False), route["currency"])
             ui.label("History").classes("text-lg q-mt-md")
-            history_table(f"/routes/{route_id}", airlines, route["currency"])
+            airline_history(f"/routes/{route_id}", airlines, route["currency"])
 
         with ui.card().classes("w-full md:w-1/3"):
             ui.label("Price alert").classes("text-lg")
