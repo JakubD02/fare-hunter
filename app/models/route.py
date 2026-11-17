@@ -1,7 +1,7 @@
 from datetime import date
 
+from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint, false
 from sqlalchemy import Enum as StrEnum
-from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.enums.currency import Currency
@@ -31,6 +31,7 @@ class Route(BaseModel):
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     origin_airport: Mapped["Airport"] = relationship(foreign_keys=[origin_id])
     destination_airport: Mapped["Airport"] = relationship(foreign_keys=[destination_id])
+    is_featured: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false(), index=True)
 
     __table_args__ = (
         UniqueConstraint("user_id", "origin_id", "destination_id", name="uq_route_user_origin_destination"),
