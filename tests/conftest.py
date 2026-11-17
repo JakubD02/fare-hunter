@@ -6,9 +6,10 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import Settings
 from app.core.database import get_db
 from app.core.rate_limit import limiter
-from app.main import app
+from app.main import create_app
 from app.models import Base
 from app.models.airline import Airline
 from app.models.airport import Airport
@@ -16,6 +17,8 @@ from app.models.route import Route
 from data import AIRLINES_DATA, AIRPORTS_DATA
 
 limiter.enabled = False
+
+app = create_app(Settings(DEMO_MODE=False))
 
 NOW = datetime.now(timezone.utc)
 
